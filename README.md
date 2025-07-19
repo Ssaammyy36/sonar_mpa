@@ -1,32 +1,28 @@
 # sonar_mpa
 
-Master-Projekt-Arbeit im Bereich Sonar an der THU
+Master-Projekt-Arbeit im Bereich Sonar an der Technischen Hochschule Ulm (THU)
 
-## Setup Git-Repository
+## Projektziel
+Dieses Projekt beschäftigt sich mit der Entwicklung und Auswertung von Sonar-Daten. Ziel ist es, Methoden zur Analyse, Verarbeitung und Visualisierung von Sonar-Signalen zu entwickeln und zu dokumentieren.
 
-### 1. Git-Bash aufsetzen
+## Projektstruktur
+Eine Übersicht über die wichtigsten Dateien und Ordner findest du in [docs/project_structure.md](docs/project_structure.md).
 
-1. Download Git von hir: https://git-scm.com/downloads<br>
-2. Installiere Git<br>
-3. Öffne die Git-Bash<br>
+## Schnellstart
+1. Repository klonen:
+   ```sh
+   git clone git@github.com:Ssaammyy36/sonar_mpa.git
+   ```
+2. Python-Umgebung einrichten und Skripte ausführen – siehe [docs/setup_environment.md](docs/setup_environment.md)
 
-### 2. SSH-Key generieren
+## Weitere Dokumentation
+- [Entwickler-Guidelines](docs/developer_guidelines.md)
+- [Projektstruktur](docs/project_structure.md)
+- [Setup-Anleitungen](docs/setup_git_repo.md, docs/setup_environment.md)
 
-1. Key generieren: ``ssh-keygen -t ed25519 -C "deine-email@beispiel.de"``<br>
-2. Key kopieren Kopiere die Ausgabe: ``cat ~/.ssh/id_ed25519.pub``<br>
-3. Gehe im Browser zu https://github.com/settings/keys<br>
-4. Klicke auf „New SSH key“<br>
-5. Gib einen Namen ein<br>
-6. Füge den kopierten Public Key ins Feld „Key“ ein<br>
-6. Klicke „Add SSH key“<br>
+## Kontakt
+Fragen und Anregungen: Ssaammyy36 (GitHub)
 
-### 3. Repo klonen
-   
-1. Klonen mit SSH: ``git clone git@github.com:Ssaammyy36/sonar_mpa.git``
-2. VS-Code Git Einstellungen: 
-    ```sh
-    git config --global user.name "Dein Name"
-    git config --global user.email "deine@email.de"
-    ```
+
 
 

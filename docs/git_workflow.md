@@ -82,6 +82,7 @@ git push origin --delete feature/<name>  # Remote löschen
 # Zusätze
 git branch -D feature/branchTest      # Löschen Erzwingen 
 git fetch --prune                     # Hol dir alle aktuellen Branches vom Remote, und entferne alle alten, die es dort nicht mehr gibt.
+git push origin --delete neuer-branch   # Remote Branch löschen 
 ```
 
 ---

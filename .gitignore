@@ -19,3 +19,7 @@ tests/*.log
 
 # Visual Studio Code
 .vscode/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+

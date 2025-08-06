@@ -16,7 +16,7 @@ Eine Übersicht über die wichtigsten Dateien und Ordner findest du in [docs/pro
 2. Python-Umgebung einrichten und Skripte ausführen – siehe [docs/setup_environment.md](docs/setup_environment.md)
 
 ## Weitere Dokumentation
-- [Entwickler-Guidelines](docs/developer_guidelines.md)
+- [Coding Guidelines](docs/coding_guidelines.md)
 - [Projektstruktur](docs/project_structure.md)
 - [Setup-Anleitungen](docs/setup_git_repo.md, docs/setup_environment.md)
 

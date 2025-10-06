@@ -5,27 +5,6 @@
   // Base image to use. This tag selects a Python 3.12 devcontainer image.
   "image": "mcr.microsoft.com/devcontainers/python:1-3.12",
 
-  // Extra docker run arguments. Here we pass a host serial device into the container.
-  // NOTE: This works on Linux hosts; on Windows this approach typically doesn't work
-  // because Windows uses COM ports (e.g. COM3) and Docker Desktop doesn't map them
-  // as /dev/ttyUSB0. If you use Windows, consider using WSL2, a serial->TCP bridge
-  // (ser2net) or removing device passthrough.
-  "runArgs": [
-    "--device=/dev/ttyUSB0:/dev/ttyUSB0"
-  ],
-
-  // Additional bind mounts. This is redundant with --device above and can be removed
-  // if the host/OS doesn't expose /dev/ttyUSB0.
-  "mounts": [
-    "source=/dev/ttyUSB0,target=/dev/ttyUSB0,type=bind"
-  ],
-
-  // Environment variables available inside the container. Useful for scripts that
-  // need to know the serial device path.
-  "containerEnv": {
-    "USB_DEVICE": "/dev/ttyUSB0"
-  },
-
   // Command executed once after the container is created. This line adds the
   // `vscode` user to the `dialout` group so it can access serial devices on Linux.
   // The `|| true` ensures the command won't fail the post-create step if it

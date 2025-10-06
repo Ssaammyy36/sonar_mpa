@@ -1,6 +1,4 @@
 # Copyright (c) EofE Ultrasonics Co., Ltd., 2024
-#from echosndr import SingleEchosounder
-#from echosndr import DualEchosounder
 import time
 import os
 import sys
@@ -13,8 +11,11 @@ if lib_path not in sys.path:
 
 from echosndr import DualEchosounder
 
+COMPORT = "COM5"
+BAUDRATE = 115200
+
 try:
-    ss = DualEchosounder("\\\\.\\COM5", 115200)
+    ss = DualEchosounder(f"\\\\.\\{COMPORT}", BAUDRATE)
 except:
     print("Unable to open port")
 else:
@@ -33,7 +34,10 @@ else:
             time.sleep(2.0)                       # pause for 2 seconds
             data = ss.ReadData(128)               # read couple of bytes
             print(data.decode("latin_1"), end='') # Show data
+            
             ss.SendCommand("IdSetLowFreq")        # Set Low working frequency
             ss.SetValue("IdInterval", "0.5")      # Change interval
+            print("Working Frequency:", ss.GetValue("IdGetWorkFreq"), "Hz")
+            time.sleep(2.0)
             data = ss.ReadData(128)               # read couple of bytes
             print(data.decode("latin_1"), end='') # Show data

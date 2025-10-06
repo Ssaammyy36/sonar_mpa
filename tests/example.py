@@ -1,10 +1,20 @@
 # Copyright (c) EofE Ultrasonics Co., Ltd., 2024
-from echosndr import SingleEchosounder
-from echosndr import DualEchosounder
+#from echosndr import SingleEchosounder
+#from echosndr import DualEchosounder
 import time
+import os
+import sys
+
+# ensure local libs/echosounderapi is importable
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+lib_path = os.path.join(project_root, "libs", "echosounderapi")
+if lib_path not in sys.path:
+    sys.path.insert(0, lib_path)
+
+from echosndr import DualEchosounder
 
 try:
-    ss = SingleEchosounder("\\\\.\\COM62", 115200)
+    ss = DualEchosounder("\\\\.\\COM5", 115200)
 except:
     print("Unable to open port")
 else:

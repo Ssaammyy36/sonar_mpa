@@ -1,22 +1,40 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "Python 3.12",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:1-3.12"
+  // Dev Container name shown in VS Code
+  "name": "sonar_mpa Dev Container",
 
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+  // Base image to use. This tag selects a Python 3.12 devcontainer image.
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12",
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+  // Extra docker run arguments. Here we pass a host serial device into the container.
+  // NOTE: This works on Linux hosts; on Windows this approach typically doesn't work
+  // because Windows uses COM ports (e.g. COM3) and Docker Desktop doesn't map them
+  // as /dev/ttyUSB0. If you use Windows, consider using WSL2, a serial->TCP bridge
+  // (ser2net) or removing device passthrough.
+  "runArgs": [
+    "--device=/dev/ttyUSB0:/dev/ttyUSB0"
+  ],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "pip3 install --user -r requirements.txt",
+  // Additional bind mounts. This is redundant with --device above and can be removed
+  // if the host/OS doesn't expose /dev/ttyUSB0.
+  "mounts": [
+    "source=/dev/ttyUSB0,target=/dev/ttyUSB0,type=bind"
+  ],
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+  // Environment variables available inside the container. Useful for scripts that
+  // need to know the serial device path.
+  "containerEnv": {
+    "USB_DEVICE": "/dev/ttyUSB0"
+  },
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  // Command executed once after the container is created. This line adds the
+  // `vscode` user to the `dialout` group so it can access serial devices on Linux.
+  // The `|| true` ensures the command won't fail the post-create step if it
+  // is not applicable in the image.
+  "postCreateCommand": "sudo usermod -a -G dialout vscode || true",
+
+  // The user VS Code will use inside the container
+  "remoteUser": "vscode",
+
+  // Path where the workspace is mounted inside the container
+  "workspaceFolder": "/workspaces/sonar_mpa"
 }

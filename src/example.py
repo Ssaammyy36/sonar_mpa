@@ -3,16 +3,10 @@ import time
 import os
 import sys
 
-# ensure local libs/echosounderapi is importable
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-lib_path = os.path.join(project_root, "libs", "echosounderapi")
-if lib_path not in sys.path:
-    sys.path.insert(0, lib_path)
+from echosounderapi.echosndr import DualEchosounder
 
-from echosndr import DualEchosounder
-
-COMPORT = "COM5"
-BAUDRATE = 115200
+COMPORT: str = "COM5"
+BAUDRATE: int = 115200
 
 try:
     ss = DualEchosounder(f"\\\\.\\{COMPORT}", BAUDRATE)

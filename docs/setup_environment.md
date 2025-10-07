@@ -5,8 +5,8 @@ Wir verwenden einen venv für einfaches Packet-Management
 
 ## Setup
 
-1. Virtuelle Umgebung erstellen: `python -m venv venv`
-2. Virtuelle Umgebung aktivieren: `venv\Scripts\activate`
+1. Virtuelle Umgebung erstellen: `python -m venv .venv`
+2. Virtuelle Umgebung aktivieren: `.venv\Scripts\activate`
    
 ## Verwendung 
 

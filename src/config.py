@@ -1,0 +1,2 @@
+COMPORT: str = "COM5"
+BAUDRATE: int = 115200

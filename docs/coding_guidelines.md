@@ -63,21 +63,21 @@ Wir verwenden Google-Style Docstrings, da sie lesbar sind und mit Sphinx automat
 - Klasse – Docstring
  
     ```python
-    class Sensor:
+    class Sonar:
         """
-        Repräsentiert einen Sonar-Sensor.
+        Repräsentiert ein Sonar-Gerät.
 
         Attributes:
-            id (str): Sensor-ID
+            id (str): Sonar-ID
             status (str): Aktueller Status
         """
 
         def __init__(self, id: str):
             """
-            Initialisiert einen neuen Sensor.
+            Initialisiert ein neues Sonar-Gerät.
 
             Args:
-                id (str): Eindeutige Sensor-ID
+                id (str): Eindeutige Sonar-ID
             """
             self.id = id
             self.status = "off"

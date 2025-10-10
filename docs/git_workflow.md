@@ -49,7 +49,7 @@ git push -u origin feature/<name>      # Feature-Branch ins Remote laden
 
 📝 Beispiel:
 ```bash
-git checkout -b feature/sensor-api     # Branch für Sensor-API erstellen
+git checkout -b feature/sonar-api     # Branch für Sonar-API erstellen
 ```
 
 ### ✍️ Im Feature-Branch arbeiten
@@ -108,5 +108,3 @@ git push origin main                   # Änderungen hochladen
 - Keine direkten Commits auf `main` oder `dev`
 - Konflikte **vor dem Merge** lösen
 - Optional: Pull-Request für Review
-
-

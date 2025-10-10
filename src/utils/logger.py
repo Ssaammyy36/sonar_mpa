@@ -17,19 +17,12 @@ def get_logger(name: str = __name__) -> logging.Logger:
     if not logger.handlers:
         # Formatter definieren
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%H:%M:%S' # Nur Stunde, Minute, Sekunde
         )
         
         # StreamHandler erstellen und Kodierung auf UTF-8 setzen
         handler = logging.StreamHandler()
-        try:
-            # Diese Methode ist robust und funktioniert ab Python 3.7+
-            handler.stream.reconfigure(encoding='utf-8')
-        except TypeError:
-            # Fallback für ältere Versionen oder andere Stream-Typen
-            # In den meisten modernen Umgebungen sollte dies nicht notwendig sein
-            pass
-
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 

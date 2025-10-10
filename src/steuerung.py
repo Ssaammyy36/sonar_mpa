@@ -16,18 +16,27 @@ class Steuerung:
         
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
-    def starte_anwendung(self):
+    def starte_anwendung(self, test_modus: str | None = None):
         """Hauptmethode, die den Anwendungsablauf steuert."""
         self.logger.info("Sonar-Anwendung wird gestartet.")
         
+        if not test_modus:
+            self.logger.info("Kein Testmodus angegeben. Bitte wähle einen Modus.")
+            self.logger.info("Verwendung: python src/main.py [modus]")
+            self.logger.info("Verfügbare Modi: 'binaer' (1), 'nmea' (2), 'ascii' (3)")
+            return
+
         if self.sonar.verbinden():
             self.logger.info("Sonar erfolgreich verbunden.")
             
-            # Führe einen Testlauf durch (z.B. den Binär-Test)
-            self.fuehre_nmea_test_durch()
-            
-            # Hier könnten weitere Abläufe folgen
-            # self.fuehre_nmea_test_durch()
+            if test_modus.lower() in ('1', 'ascii'):
+                self.fuehre_ascii_test_durch()
+            elif test_modus.lower() in ('2', 'binaer'):
+                self.fuehre_binaer_test_durch()
+            elif test_modus.lower() in ('3', 'nmea'):
+                self.fuehre_nmea_test_durch()
+            else:
+                self.logger.warning(f"Unbekannter Testmodus: '{test_modus}'. Verfügbare Modi: 'binaer' (1), 'nmea' (2), 'ascii' (3).")
 
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
@@ -55,6 +64,8 @@ class Steuerung:
         self.sonar.konfigurieren(output_mode="3", frequency="low", interval="1.0", sampl_freq="100000")
         nmea_daten = self.sonar.daten_lesen(dauer=5.0)
         
+        print(nmea_daten)
+
         if nmea_daten:
             tiefen = self.datenverarbeitung.parse_nmea_tiefe(nmea_daten)
             if tiefen:
@@ -65,3 +76,15 @@ class Steuerung:
                 self.logger.info("NMEA-Daten empfangen, aber keine gültigen Tiefenwerte ($SDDBT) gefunden.")
         else:
             self.logger.warning("Keine NMEA-Daten vom Sonar empfangen.")
+    
+    def fuehre_ascii_test_durch(self):
+        """Führt einen Test zur Aufnahme und Verarbeitung von ASCII-Daten durch."""
+        self.logger.info("Starte ASCII-Daten-Test...")
+        self.sonar.konfigurieren(output_mode="1", frequency="high", interval="0.5", sampl_freq="100000")
+        ascii_daten = self.sonar.daten_lesen(dauer=5.0)
+        
+        if ascii_daten:
+            decoded_data = ascii_daten.decode("latin_1")
+            self.logger.info("ASCII-Daten empfangen:\n" + decoded_data)
+        else:
+            self.logger.warning("Keine ASCII-Daten vom Sonar empfangen.")

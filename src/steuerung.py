@@ -11,7 +11,7 @@ class Steuerung:
         """Initialisiert die Steuerung und alle Kernkomponenten."""
         self.logger = get_logger(__name__)
         
-        self.sonar = Sonar("S1")
+        self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung()
         
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
@@ -24,7 +24,7 @@ class Steuerung:
             self.logger.info("Sonar erfolgreich verbunden.")
             
             # Führe einen Testlauf durch (z.B. den Binär-Test)
-            self.fuehre_binaer_test_durch()
+            self.fuehre_nmea_test_durch()
             
             # Hier könnten weitere Abläufe folgen
             # self.fuehre_nmea_test_durch()
@@ -48,3 +48,20 @@ class Steuerung:
             self.datenverarbeitung.plotte_echogramm(amplituden, titel="Sonar Echo Amplitude (Binär-Modus)")
         else:
             self.logger.warning("Keine Binärdaten vom Sonar empfangen.")
+    
+    def fuehre_nmea_test_durch(self):
+        """Führt einen Test zur Aufnahme und Verarbeitung von NMEA-Daten durch."""
+        self.logger.info("Starte NMEA-Daten-Test...")
+        self.sonar.konfigurieren(output_mode="3", frequency="low", interval="1.0", sampl_freq="100000")
+        nmea_daten = self.sonar.daten_lesen(dauer=5.0)
+        
+        if nmea_daten:
+            tiefen = self.datenverarbeitung.parse_nmea_tiefe(nmea_daten)
+            if tiefen:
+                # Formatiert die Liste der Tiefen für eine bessere Lesbarkeit im Log
+                formatierte_tiefen = ", ".join([f"{t:.2f}m" for t in tiefen])
+                self.logger.info(f"{len(tiefen)} Tiefenwerte erfolgreich geparst: [{formatierte_tiefen}]")
+            else:
+                self.logger.info("NMEA-Daten empfangen, aber keine gültigen Tiefenwerte ($SDDBT) gefunden.")
+        else:
+            self.logger.warning("Keine NMEA-Daten vom Sonar empfangen.")

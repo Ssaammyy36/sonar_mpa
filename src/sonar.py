@@ -6,28 +6,15 @@ from echosounderapi.echosndr import DualEchosounder
 import config
 
 class Sonar:
-    """
-    Repräsentiert das Sonar-Gerät und kapselt die Hardware-Kommunikation.
-
-    Attributes:
-        sonar_id (str): Die eindeutige ID des Sonars.
-        logger: Das Logging-Objekt für diese Klasse.
-        echosounder (DualEchosounder): Das API-Objekt für die Sonar-Steuerung.
-    """
-    def __init__(self, sonar_id: str):
-        """
-        Initialisiert ein neues Sonar-Objekt.
-
-        Args:
-            sonar_id (str): Die ID, die dem Sonar zugewiesen wird.
-        """
-        self.sonar_id = sonar_id
+    """Repräsentiert das Sonar-Gerät und kapselt die Hardware-Kommunikation."""
+    def __init__(self):
+        """Initialisiert ein neues Sonar-Objekt."""
         self.logger = get_logger(__name__)
         self.echosounder: Optional[DualEchosounder] = None
 
     def verbinden(self) -> bool:
         """Stellt die Verbindung zum Echolot her."""
-        self.logger.info(f"Versuche, Sonar '{self.sonar_id}' auf Port {config.COMPORT} zu verbinden...")
+        self.logger.info(f"Versuche, Sonar auf Port {config.COMPORT} mit {config.BAUDRATE} Baud zu verbinden...")
         try:
             self.echosounder = DualEchosounder(f"\\\\.\\{config.COMPORT}", config.BAUDRATE)
         except Exception as e:
@@ -39,7 +26,7 @@ class Sonar:
             self.echosounder = None
             return False
 
-        self.logger.info(f"Echolot erfolgreich auf {config.COMPORT} mit {config.BAUDRATE} Baud erkannt.")
+        self.logger.info(f"Echolot erfolgreich erkannt.")
         self.echosounder.SetCurrentTime()
         return True
 
@@ -87,6 +74,11 @@ class Sonar:
         
         time.sleep(dauer)
         data = self.echosounder.ReadData(1024) # Buffer size, kann angepasst werden
+        if data:
+            # Loggt die ersten 100 Bytes der Rohdaten für Debugging-Zwecke.
+            self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
+        else:
+            self.logger.debug("Keine Daten vom Sonar empfangen.")
         self.echosounder.Stop() # Stoppt das Pingen nach dem Lesen
         return data
 

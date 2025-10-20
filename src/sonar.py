@@ -77,7 +77,8 @@ class Sonar:
         if data:
             # Loggt die ersten 100 Bytes der Rohdaten für Debugging-Zwecke.
             #self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
-            self.logger.debug(f"{len(data)} Bytes empfangen: {data}")
+            self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}")
+            print(type(data))
         else:
             self.logger.debug("Keine Daten vom Sonar empfangen.")
         self.echosounder.Stop() # Stoppt das Pingen nach dem Lesen

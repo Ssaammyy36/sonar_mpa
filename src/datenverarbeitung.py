@@ -82,15 +82,17 @@ class Datenverarbeitung:
         if not bin_data:
             return bin_data
         try:
-            data = bin_data[0 : 16]
-            byte_representations = []
-            for byte in data:
-                byte_representations.append(f"hex: 0x{byte:02x}, dec: {byte}")
+            data = bin_data[0 : 8] # Lese die ersten 8 bytes
+            message["magic"] = data
+
+            data = bin_data[8 : 10]
+            message["packet_id"]= data
+
+            data = bin_data[10 : 14]
+            message["length"]= data 
+
             
-            magic_representation = " | ".join(byte_representations)
-            message["magic"] = magic_representation
-            
-            self.logger.debug(f"Magic (bytes): {magic_representation}")
+            self.logger.debug(message)
         except (ValueError, UnicodeDecodeError) as e:
             self.logger.error(f"Fehler beim Parsen der Binärdaten: {e}")
         

@@ -74,3 +74,21 @@ class Datenverarbeitung:
         plt.ylabel("Signal Amplitude [bit 0..255]")
         plt.grid(True)
         plt.show()
+    
+    def parse_12_bit_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
+        """Parses the raw binary data from the sonar into a list of integer amplitudes."""
+        amplituden = []
+        if not bin_data:
+            return amplituden
+        try:
+            # Each amplitude is represented by 2 bytes (16 bits), but only 12 bits are used
+            for i in range(0, len(bin_data), 2):
+                if i + 1 < len(bin_data):
+                    # Combine two bytes and mask to get the lower 12 bits
+                    amplitude = ((bin_data[i] << 8) | bin_data[i + 1]) & 0x0FFF
+                    amplituden.append(amplitude)
+        except (ValueError, UnicodeDecodeError) as e:
+            self.logger.error(f"Fehler beim Parsen der Binärdaten: {e}")
+        
+        return amplituden
+    

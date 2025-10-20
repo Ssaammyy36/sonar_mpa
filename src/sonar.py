@@ -75,8 +75,9 @@ class Sonar:
         time.sleep(dauer)
         data = self.echosounder.ReadData(1024) # Buffer size, kann angepasst werden
         if data:
-            # Loggt die ersten 100 Bytes der Rohdaten für Debugging-Zwecke.
-            self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
+            # Wandelt die Bytes in einen Binär-String um (jedes Byte als 8 Ziffern, mit Leerzeichen getrennt)
+            binary_string = ' '.join(format(b, '08b') for b in data)
+            self.logger.debug(f"{len(data)} Bytes empfangen: {binary_string}...")
         else:
             self.logger.debug("Keine Daten vom Sonar empfangen.")
         self.echosounder.Stop() # Stoppt das Pingen nach dem Lesen

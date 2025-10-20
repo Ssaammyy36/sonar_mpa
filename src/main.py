@@ -13,8 +13,9 @@ def main():
         # '1' oder 'ascii':  für den rohen ASCII-Daten-Test
         # '2' oder 'binaer': für den Binärdaten-Test mit Plot
         # '3' oder 'nmea':   für den NMEA-Tiefendaten-Test
+        # '100' oder '12bit': für den 12-Bit Binärdaten-Test mit Plot
 
-        test_modus = "1"
+        test_modus = "100"
         
         steuerung = Steuerung()
         # Übergib den ausgewählten Modus an die Steuerungsklasse

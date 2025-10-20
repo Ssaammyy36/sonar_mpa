@@ -35,6 +35,8 @@ class Steuerung:
                 self.fuehre_binaer_test_durch()
             elif test_modus.lower() in ('3', 'nmea'):
                 self.fuehre_nmea_test_durch()
+            elif test_modus.lower() in ('100', '12bit'):
+                self.fuehre_12_bit_binary_test_durch()
             else:
                 self.logger.warning(f"Unbekannter Testmodus: '{test_modus}'. Verfügbare Modi: 'binaer' (1), 'nmea' (2), 'ascii' (3).")
 
@@ -78,6 +80,7 @@ class Steuerung:
             self.logger.warning("Keine NMEA-Daten vom Sonar empfangen.")
     
     def fuehre_ascii_test_durch(self):
+
         """Führt einen Test zur Aufnahme und Verarbeitung von ASCII-Daten durch."""
         self.logger.info("Starte ASCII-Daten-Test...")
         self.sonar.konfigurieren(output_mode="1", frequency="high", interval="0.5", sampl_freq="100000")
@@ -88,3 +91,18 @@ class Steuerung:
             self.logger.info("ASCII-Daten empfangen:\n" + decoded_data)
         else:
             self.logger.warning("Keine ASCII-Daten vom Sonar empfangen.")
+
+    def fuehre_12_bit_binary_test_durch(self):
+        """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
+        self.logger.info("Starte 12-Bit Binärdaten-Test...")
+        self.sonar.konfigurieren(output_mode="100", frequency="high", interval="0.2", sampl_freq="100000")
+        binaer_daten = self.sonar.daten_lesen(dauer=2.0)
+        
+        if binaer_daten:
+            #amplituden = self.datenverarbeitung.parse_12_bit_binary_data(binaer_daten)
+            amplituden = binaer_daten
+
+            self.logger.info(f"{len(amplituden)} Amplituden-Samples erfolgreich geparst.")
+            #self.datenverarbeitung.plotte_echogramm(amplituden, titel="Sonar Echo Amplitude (Binär-Modus)")
+        else:
+            self.logger.warning("Keine Binärdaten vom Sonar empfangen.")

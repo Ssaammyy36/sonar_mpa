@@ -62,7 +62,29 @@ class Sonar:
         self.logger.info(f"Konfiguration: {output_mode=}, {frequency=}, {interval=}, {pulse_length=}, {sampl_freq=}")
 
     def daten_lesen(self, dauer: float = 2.0) -> Optional[bytes]:
-        """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück."""
+        """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit hex"""
+        if not self.echosounder:
+            self.logger.warning("Sonar nicht verbunden. Datenlesen nicht möglich.")
+            return None
+
+        self.logger.info(f"Starte Ping für {dauer} Sekunden...")
+        if not self.echosounder.Start():
+            self.logger.error("Starten des Echolots fehlgeschlagen.")
+            return None
+        
+        time.sleep(dauer)
+        data = self.echosounder.ReadData(1024) # Buffer size, kann angepasst werden
+        if data:
+            # Loggt die ersten 100 Bytes der Rohdaten für Debugging-Zwecke.
+            #self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
+            self.logger.debug(f"{len(data)} Bytes empfangen: {data}")
+        else:
+            self.logger.debug("Keine Daten vom Sonar empfangen.")
+        self.echosounder.Stop() # Stoppt das Pingen nach dem Lesen
+        return data
+    
+    def daten_lesen_zu_einem_byte(self, dauer: float = 2.0) -> Optional[bytes]:
+        """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit byte"""
         if not self.echosounder:
             self.logger.warning("Sonar nicht verbunden. Datenlesen nicht möglich.")
             return None

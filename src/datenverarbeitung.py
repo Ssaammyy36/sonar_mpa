@@ -1,6 +1,7 @@
 from utils.logger import get_logger
 from typing import List, Optional
 import matplotlib.pyplot as plt
+import struct
 
 class Datenverarbeitung:
     """
@@ -76,19 +77,22 @@ class Datenverarbeitung:
         plt.show()
     
     def parse_12_bit_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
-        """Parses the raw binary data from the sonar into a list of integer amplitudes."""
-        amplituden = []
+        """Parses the raw binary data from the sonar into a dictionary with the meaning of the bytes."""
+        message = {}
         if not bin_data:
-            return amplituden
+            return bin_data
         try:
-            # Each amplitude is represented by 2 bytes (16 bits), but only 12 bits are used
-            for i in range(0, len(bin_data), 2):
-                if i + 1 < len(bin_data):
-                    # Combine two bytes and mask to get the lower 12 bits
-                    amplitude = ((bin_data[i] << 8) | bin_data[i + 1]) & 0x0FFF
-                    amplituden.append(amplitude)
+            data = bin_data[0 : 16]
+            byte_representations = []
+            for byte in data:
+                byte_representations.append(f"hex: 0x{byte:02x}, dec: {byte}")
+            
+            magic_representation = " | ".join(byte_representations)
+            message["magic"] = magic_representation
+            
+            self.logger.debug(f"Magic (bytes): {magic_representation}")
         except (ValueError, UnicodeDecodeError) as e:
             self.logger.error(f"Fehler beim Parsen der Binärdaten: {e}")
         
-        return amplituden
+        return message
     

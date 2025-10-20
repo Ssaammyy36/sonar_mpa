@@ -96,11 +96,11 @@ class Steuerung:
         """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
         self.logger.info("Starte 12-Bit Binärdaten-Test...")
         self.sonar.konfigurieren(output_mode="100", frequency="high", interval="0.2", sampl_freq="100000")
-        binaer_daten = self.sonar.daten_lesen(dauer=2.0)
+        binaer_daten = self.sonar.daten_lesen_zu_einem_byte(dauer=2.0)
         
         if binaer_daten:
-            #amplituden = self.datenverarbeitung.parse_12_bit_binary_data(binaer_daten)
-            amplituden = binaer_daten
+            amplituden = self.datenverarbeitung.parse_12_bit_binary_data(binaer_daten)
+            #amplituden = binaer_daten
 
             self.logger.info(f"{len(amplituden)} Amplituden-Samples erfolgreich geparst.")
             #self.datenverarbeitung.plotte_echogramm(amplituden, titel="Sonar Echo Amplitude (Binär-Modus)")

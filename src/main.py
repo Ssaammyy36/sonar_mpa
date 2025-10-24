@@ -18,8 +18,8 @@ def main():
 
         steuerung = Steuerung()
         # Übergib den ausgewählten Modus an die Steuerungsklasse
-        # steuerung.starte_anwendung(test_modus)
-        steuerung.starte_test_verarbeitung(test_modus)
+        steuerung.starte_anwendung(test_modus)
+        #steuerung.starte_test_verarbeitung(test_modus)
     except Exception as e:
         print(f"Ein unerwarteter Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

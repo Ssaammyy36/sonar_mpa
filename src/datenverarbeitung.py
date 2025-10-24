@@ -87,13 +87,14 @@ class Datenverarbeitung:
         if not bin_data:
             return bin_data
         try:
-            # Abfragen, ob Daten von Sensor oder aus Datei kommen
-            if type(bin_data) == str:
-                bin_data = bytestring_to_bin(bin_data)
-
-            self.logger.debug("Parsing 12-bit binary data...")
-            self.logger.debug(bin_data)
             self.logger.debug(type(bin_data))
+            # Abfragen, ob Daten von Sensor oder aus Datei kommen
+            #if type(bin_data) == str:
+            #    bin_data = bytestring_to_bin(bin_data)
+            #else
+            
+            self.logger.debug("Parsing 12-bit binary data...")    
+            bin_data = self.bytestring_to_bin(bin_data)
 
             data = bin_data[0: 8]  # Lese die ersten 8 bytes
             message["magic"] = data
@@ -111,36 +112,35 @@ class Datenverarbeitung:
         return message
 
 
-def bytestring_to_array(byte_str):
-    """
-    Wandelt ein Byte-String-Literal oder bytes-Objekt in ein NumPy-Array um,
-    das die Rohdaten als uint8 enthält. Ideal für Sensordatenverarbeitung.
-    """
-    # Falls byte_str ein Text ist, z. B. "b'\x00\x89...'"
-    data = ast.literal_eval(byte_str)
-
-    # In NumPy-Array umwandeln (1 Byte = 1 Element)
-    arr = np.frombuffer(data, dtype=np.uint8)
-    return arr
-
-
-def bytestring_to_bin(byte_str):
-    """
-    Wandelt ein Byte-String-Literal oder bytes-Objekt in ein NumPy-Array aus Bits (0/1) um.
-    Ideal für die bitweise Analyse oder Dekodierung von Sensordaten.
-    """
-    logger = get_logger(__name__)
-    # Falls byte_str ein Text ist, z. B. "b'\x00\x89...'"
-    if isinstance(byte_str, str):
+    def bytestring_to_array(self, byte_str):
+        """
+        Wandelt ein Byte-String-Literal oder bytes-Objekt in ein NumPy-Array um,
+        das die Rohdaten als uint8 enthält. Ideal für Sensordatenverarbeitung.
+        """
+        # Falls byte_str ein Text ist, z. B. "b'\x00\x89...'"
         data = ast.literal_eval(byte_str)
-    else:
-        data = byte_str
 
-    # Bytes → NumPy-Array (uint8)
-    byte_array = np.frombuffer(data, dtype=np.uint8)
+        # In NumPy-Array umwandeln (1 Byte = 1 Element)
+        arr = np.frombuffer(data, dtype=np.uint8)
+        return arr
 
-    # Bytes → Bits (jedes Byte wird in 8 Bits zerlegt)
-    bit_array = np.unpackbits(byte_array)
 
-    logger.debug(f"{bit_array}")
-    return bit_array
+    def bytestring_to_bin(self, byte_str):
+        """
+        Wandelt ein Byte-String-Literal oder bytes-Objekt in ein NumPy-Array aus Bits (0/1) um.
+        Ideal für die bitweise Analyse oder Dekodierung von Sensordaten.
+        """
+        # Falls byte_str ein Text ist, z. B. "b'\x00\x89...'"
+        if isinstance(byte_str, str):
+            data = ast.literal_eval(byte_str)
+        else:
+            data = byte_str
+
+        # Bytes → NumPy-Array (uint8)
+        byte_array = np.frombuffer(data, dtype=np.uint8)
+
+        # Bytes → Bits (jedes Byte wird in 8 Bits zerlegt)
+        bit_array = np.unpackbits(byte_array)
+
+        self.logger.debug(f"Daten in bin Darstellung: {bit_array}")
+        return bit_array

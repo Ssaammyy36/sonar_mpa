@@ -2,6 +2,8 @@ from utils.logger import get_logger
 from typing import List, Optional
 import matplotlib.pyplot as plt
 import struct
+import ast
+
 
 class Datenverarbeitung:
     """
@@ -10,6 +12,7 @@ class Datenverarbeitung:
     Attributes:
         logger: Das Logging-Objekt für diese Klasse.
     """
+
     def __init__(self):
         """
         Initialisiert ein neues Datenverarbeitungs-Objekt.
@@ -37,10 +40,11 @@ class Datenverarbeitung:
                         try:
                             tiefen.append(float(parts[3]))
                         except (ValueError, IndexError):
-                            self.logger.warning(f"Fehler beim Parsen des NMEA-Satzes: {line}")
+                            self.logger.warning(
+                                f"Fehler beim Parsen des NMEA-Satzes: {line}")
         except UnicodeDecodeError as e:
             self.logger.error(f"Fehler beim Dekodieren der NMEA-Daten: {e}")
-        
+
         return tiefen
 
     def parse_binaer_daten(self, bin_data: Optional[bytes]) -> List[int]:
@@ -48,7 +52,7 @@ class Datenverarbeitung:
         amplituden = []
         if not bin_data:
             return amplituden
-        
+
         try:
             decoded_data = bin_data.decode("latin_1")
             lines = decoded_data.strip().splitlines()
@@ -58,7 +62,7 @@ class Datenverarbeitung:
                     amplituden.append(int(line))
         except (ValueError, UnicodeDecodeError) as e:
             self.logger.error(f"Fehler beim Parsen der Binärdaten: {e}")
-        
+
         return amplituden
 
     def plotte_echogramm(self, amplituden: List[int], titel: str = "Sonar Echogramm"):
@@ -66,7 +70,7 @@ class Datenverarbeitung:
         if not amplituden:
             self.logger.info("Keine Amplitudendaten zum Plotten vorhanden.")
             return
-        
+
         self.logger.info(f"Plotte {len(amplituden)} Amplituden-Samples.")
         plt.figure(figsize=(12, 6))
         plt.plot(amplituden)
@@ -75,26 +79,43 @@ class Datenverarbeitung:
         plt.ylabel("Signal Amplitude [bit 0..255]")
         plt.grid(True)
         plt.show()
-    
+
     def parse_12_bit_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
         """Parses the raw binary data from the sonar into a dictionary with the meaning of the bytes."""
         message = {}
         if not bin_data:
             return bin_data
         try:
-            data = bin_data[0 : 8] # Lese die ersten 8 bytes
+            # Abfragen, ob Daten von Sensor oder aus Datei kommen
+            if type(bin_data) == str:
+                bin_data = bytestring_to_bin(bin_data)
+            self.logger.debug(bin_data)
+            self.logger.debug(type(bin_data))
+
+            data = bin_data[0: 8]  # Lese die ersten 8 bytes
             message["magic"] = data
 
-            data = bin_data[8 : 10]
-            message["packet_id"]= data
+            data = bin_data[8: 10]
+            message["packet_id"] = data
 
-            data = bin_data[10 : 14]
-            message["length"]= data 
+            data = bin_data[10: 14]
+            message["length"] = data
 
-            
             self.logger.debug(message)
         except (ValueError, UnicodeDecodeError) as e:
             self.logger.error(f"Fehler beim Parsen der Binärdaten: {e}")
-        
+
         return message
-    
+
+
+def bytestring_to_bin(byte_str):
+    # Falls byte_str wie "b'\\x00\\x89...'" als Text kommt:
+    if isinstance(byte_str, str):
+        bin_data = ast.literal_eval(byte_str)
+    else:
+        bin_data = byte_str
+
+    # Jedes Byte in Bits zerlegen → Liste von Listen (je 8 Bits)
+    bit_groups = [[int(bit) for bit in f'{byte:08b}'] for byte in bin_data]
+
+    return bit_groups

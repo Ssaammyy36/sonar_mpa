@@ -52,14 +52,13 @@ class Steuerung:
         self.logger.info("Sonar-Anwendung beendet.")
 
     def starte_test_verarbeitung(self, test_modus):
-        self.logger.info("Sonar-Anwendung wird gestartet.")
+        self.logger.info("Datenverarbeitung wird gestartet.")
 
         if not test_modus:
             self.logger.info(
                 "Kein Testmodus angegeben. Bitte wähle einen Modus.")
             self.logger.info("Verwendung: python src/main.py [modus]")
-            self.logger.info(
-                "Verfügbare Modi: 'nmea' (3), '12bit' (100)")
+            self.logger.info("Verfügbare Modi: 'nmea' (3), '12bit' (100)")
             return
 
         script_path = Path(__file__).resolve().parent
@@ -69,7 +68,7 @@ class Steuerung:
         filepath = project_path / folder / filename
 
         try:
-            with open(filepath, 'rb') as f:
+            with open(filepath, 'r') as f:
                 file = f.read()
         except Exception as e:
             self.logger.error(f"Fehler beim Lesen der Datei: {e}")

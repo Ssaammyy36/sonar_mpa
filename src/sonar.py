@@ -89,7 +89,7 @@ class Sonar:
             # self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
             self.logger.debug(f"{len(data)} Bytes empfangen: {data}")
             # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            self.logger.debug(type(data))
+            self.logger.debug(f"sonar.daten_lesen(): type(data) = {type(data)}")
         else:
             self.logger.debug("Keine Daten vom Sonar empfangen.")
         self.echosounder.Stop()  # Stoppt das Pingen nach dem Lesen

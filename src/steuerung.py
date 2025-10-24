@@ -52,34 +52,35 @@ class Steuerung:
         self.logger.info("Sonar-Anwendung beendet.")
 
     def starte_test_verarbeitung(self, test_modus):
-        self.logger.info("Datenverarbeitung wird gestartet.")
+        self.logger.info("--- Test zurDatenverarbeitung wird gestartet. ---")
 
         if not test_modus:
-            self.logger.info(
-                "Kein Testmodus angegeben. Bitte wähle einen Modus.")
+            self.logger.info("Kein Testmodus angegeben. Bitte wähle einen Modus.")
             self.logger.info("Verwendung: python src/main.py [modus]")
             self.logger.info("Verfügbare Modi: 'nmea' (3), '12bit' (100)")
             return
 
+        # Dateinpfad 
         script_path = Path(__file__).resolve().parent
         project_path = script_path.parent
         folder = 'logs'
         filename = '12bit_24102025_1'
         filepath = project_path / folder / filename
 
+        # Datei lesen
         try:
             with open(filepath, 'r') as f:
                 file = f.read()
         except Exception as e:
             self.logger.error(f"Fehler beim Lesen der Datei: {e}")
 
+        # Verarbeiten
         data = self.datenverarbeitung.parse_12_bit_binary_data(file)
 
     def fuehre_nmea_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von NMEA-Daten durch."""
         self.logger.info("Starte NMEA-Daten-Test...")
-        self.sonar.konfigurieren(
-            output_mode="3", frequency="low", interval="1.0", sampl_freq="100000")
+        self.sonar.konfigurieren(output_mode="3", frequency="low", interval="1.0", sampl_freq="100000")
         nmea_daten = self.sonar.daten_lesen(dauer=5.0)
 
         print(nmea_daten)
@@ -106,8 +107,7 @@ class Steuerung:
         binaer_daten = self.sonar.daten_lesen(dauer=2.0)
 
         if binaer_daten:
-            amplituden = self.datenverarbeitung.parse_12_bit_binary_data(
-                binaer_daten)
+            amplituden = self.datenverarbeitung.parse_12_bit_binary_data(binaer_daten)
             # amplituden = binaer_daten
 
             self.logger.info(

@@ -90,6 +90,8 @@ class Datenverarbeitung:
             # Abfragen, ob Daten von Sensor oder aus Datei kommen
             if type(bin_data) == str:
                 bin_data = bytestring_to_bin(bin_data)
+
+            self.logger.debug("Parsing 12-bit binary data...")
             self.logger.debug(bin_data)
             self.logger.debug(type(bin_data))
 

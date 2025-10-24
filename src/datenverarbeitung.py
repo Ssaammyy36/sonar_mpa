@@ -90,18 +90,19 @@ class Datenverarbeitung:
             self.logger.debug(f"Typ der Daten: {type(bin_data)}")
             self.logger.debug("Parsing 12-bit binary data...")
             byte_arr = self.bytestring_to_bytearray(bin_data)
-            bit_arr = self.bytearray_to_binarray(byte_arr)
+            # bit_arr = self.bytearray_to_binarray(byte_arr)
 
-            data = bin_data[0: 8]  # Lese die ersten 8 bytes
-            message["magic"] = data
+            # Decode using 'latin-1' which maps each byte to a character without errors.
+            # This will produce a string, but it might not be human-readable if the data is not text.
+            # It helps to visualize the raw byte values as characters.
+            message["magic"] = byte_arr[0:8].tobytes().decode('latin-1')
+            message["packet_id"] = byte_arr[8:10].tobytes().decode('latin-1')
 
-            data = bin_data[8: 10]
-            message["packet_id"] = data
-
-            data = bin_data[10: 14]
-            message["length"] = data
-
+            length_bytes = byte_arr[10:14].tobytes()
+            message["length"] = int.from_bytes(
+                length_bytes, 'little', signed=False)
             self.logger.debug(message)
+
         except (ValueError, UnicodeDecodeError) as e:
             self.logger.error(f"Fehler beim Parsen der Binärdaten: {e}")
 

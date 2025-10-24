@@ -101,8 +101,9 @@ class Datenverarbeitung:
             message["packet_id"] = byte_arr[8:10].tobytes().decode('latin-1')
 
             length_bytes = byte_arr[10:14].tobytes()
-            message["length"] = int.from_bytes(
-                length_bytes, 'little', signed=False)
+            message["length"] = int.from_bytes(length_bytes, 'little', signed=False)
+
+            
             self.logger.debug(message)
 
         except (ValueError, UnicodeDecodeError) as e:

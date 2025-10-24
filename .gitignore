@@ -18,4 +18,4 @@ tests/*.log
 .ipynb_checkpoints/
 
 # logs
-*.log
+logs/*.log

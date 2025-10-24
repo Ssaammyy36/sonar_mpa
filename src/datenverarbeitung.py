@@ -1,8 +1,8 @@
 from utils.logger import get_logger
 from typing import List, Optional
 import matplotlib.pyplot as plt
-import struct
 import ast
+import numpy as np
 
 
 class Datenverarbeitung:
@@ -108,14 +108,34 @@ class Datenverarbeitung:
         return message
 
 
+def bytestring_to_array(byte_str):
+    """
+    Wandelt ein Byte-String-Literal oder bytes-Objekt in ein NumPy-Array um,
+    das die Rohdaten als uint8 enthält. Ideal für Sensordatenverarbeitung.
+    """
+    # Falls byte_str ein Text ist, z. B. "b'\\x00\\x89...'"
+    data = ast.literal_eval(byte_str)
+
+    # In NumPy-Array umwandeln (1 Byte = 1 Element)
+    arr = np.frombuffer(data, dtype=np.uint8)
+    return arr
+
+
 def bytestring_to_bin(byte_str):
-    # Falls byte_str wie "b'\\x00\\x89...'" als Text kommt:
+    """
+    Wandelt ein Byte-String-Literal oder bytes-Objekt in ein NumPy-Array aus Bits (0/1) um.
+    Ideal für die bitweise Analyse oder Dekodierung von Sensordaten.
+    """
+    # Falls byte_str ein Text ist, z. B. "b'\\x00\\x89...'"
     if isinstance(byte_str, str):
-        bin_data = ast.literal_eval(byte_str)
+        data = ast.literal_eval(byte_str)
     else:
-        bin_data = byte_str
+        data = byte_str
 
-    # Jedes Byte in Bits zerlegen → Liste von Listen (je 8 Bits)
-    bit_groups = [[int(bit) for bit in f'{byte:08b}'] for byte in bin_data]
+    # Bytes → NumPy-Array (uint8)
+    byte_array = np.frombuffer(data, dtype=np.uint8)
 
-    return bit_groups
+    # Bytes → Bits (jedes Byte wird in 8 Bits zerlegt)
+    bit_array = np.unpackbits(byte_array)
+
+    return bit_array

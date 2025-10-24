@@ -5,8 +5,10 @@ from utils.logger import get_logger
 from echosounderapi.echosndr import DualEchosounder
 import config
 
+
 class Sonar:
     """Repräsentiert das Sonar-Gerät und kapselt die Hardware-Kommunikation."""
+
     def __init__(self):
         """Initialisiert ein neues Sonar-Objekt."""
         self.logger = get_logger(__name__)
@@ -14,11 +16,14 @@ class Sonar:
 
     def verbinden(self) -> bool:
         """Stellt die Verbindung zum Echolot her."""
-        self.logger.info(f"Versuche, Sonar auf Port {config.COMPORT} zu verbinden...")
+        self.logger.info(
+            f"Versuche, Sonar auf Port {config.COMPORT} zu verbinden...")
         try:
-            self.echosounder = DualEchosounder(f"\\\\.\\{config.COMPORT}", config.BAUDRATE)
+            self.echosounder = DualEchosounder(
+                f"\\\\.\\{config.COMPORT}", config.BAUDRATE)
         except Exception as e:
-            self.logger.error(f"Fehler beim Erstellen des Echosounder-Objekts: {e}")
+            self.logger.error(
+                f"Fehler beim Erstellen des Echosounder-Objekts: {e}")
             return False
 
         if not self.echosounder.Detect():
@@ -26,7 +31,8 @@ class Sonar:
             self.echosounder = None
             return False
 
-        self.logger.info(f"Echolot erfolgreich auf {config.COMPORT} mit {config.BAUDRATE} Baud erkannt.")
+        self.logger.info(
+            f"Echolot erfolgreich auf {config.COMPORT} mit {config.BAUDRATE} Baud erkannt.")
         self.echosounder.SetCurrentTime()
         return True
 
@@ -42,7 +48,8 @@ class Sonar:
     def konfigurieren(self, output_mode: str, frequency: str, interval: str, pulse_length: str = "20", sampl_freq: str = "100000"):
         """Konfiguriert das Echolot mit den gegebenen Parametern."""
         if not self.echosounder:
-            self.logger.warning("Sonar nicht verbunden. Konfiguration nicht möglich.")
+            self.logger.warning(
+                "Sonar nicht verbunden. Konfiguration nicht möglich.")
             return
 
         self.logger.info("Konfiguriere Echolot...")
@@ -59,51 +66,32 @@ class Sonar:
         self.echosounder.SetValue("IdInterval", interval)
         self.echosounder.SetValue("IdTxLength", pulse_length)
         self.echosounder.SetValue("IdSamplFreq", sampl_freq)
-        self.logger.info(f"Konfiguration: {output_mode=}, {frequency=}, {interval=}, {pulse_length=}, {sampl_freq=}")
+        self.logger.info(
+            f"Konfiguration: {output_mode=}, {frequency=}, {interval=}, {pulse_length=}, {sampl_freq=}")
 
     def daten_lesen(self, dauer: float = 2.0) -> Optional[bytes]:
         """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit hex"""
         if not self.echosounder:
-            self.logger.warning("Sonar nicht verbunden. Datenlesen nicht möglich.")
+            self.logger.warning(
+                "Sonar nicht verbunden. Datenlesen nicht möglich.")
             return None
 
         self.logger.info(f"Starte Ping für {dauer} Sekunden...")
         if not self.echosounder.Start():
             self.logger.error("Starten des Echolots fehlgeschlagen.")
             return None
-        
+
         time.sleep(dauer)
-        data = self.echosounder.ReadData(1024) # Buffer size, kann angepasst werden
+        # Buffer size, kann angepasst werden
+        data = self.echosounder.ReadData(1024)
         if data:
             # Loggt die ersten 100 Bytes der Rohdaten für Debugging-Zwecke.
-            #self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
+            # self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
             self.logger.debug(f"{len(data)} Bytes empfangen: {data}")
             print(type(data))
         else:
             self.logger.debug("Keine Daten vom Sonar empfangen.")
-        self.echosounder.Stop() # Stoppt das Pingen nach dem Lesen
-        return data
-    
-    def daten_lesen_zu_einem_byte(self, dauer: float = 2.0) -> Optional[bytes]:
-        """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit byte"""
-        if not self.echosounder:
-            self.logger.warning("Sonar nicht verbunden. Datenlesen nicht möglich.")
-            return None
-
-        self.logger.info(f"Starte Ping für {dauer} Sekunden...")
-        if not self.echosounder.Start():
-            self.logger.error("Starten des Echolots fehlgeschlagen.")
-            return None
-        
-        time.sleep(dauer)
-        data = self.echosounder.ReadData(1024) # Buffer size, kann angepasst werden
-        if data:
-            # Wandelt die Bytes in einen Binär-String um (jedes Byte als 8 Ziffern, mit Leerzeichen getrennt)
-            binary_string = ' '.join(format(b, '08b') for b in data)
-            self.logger.debug(f"{len(data)} Bytes empfangen: {binary_string}...")
-        else:
-            self.logger.debug("Keine Daten vom Sonar empfangen.")
-        self.echosounder.Stop() # Stoppt das Pingen nach dem Lesen
+        self.echosounder.Stop()  # Stoppt das Pingen nach dem Lesen
         return data
 
     def test(self):

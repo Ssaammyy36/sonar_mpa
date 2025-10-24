@@ -27,7 +27,7 @@ class Steuerung:
                 "Kein Testmodus angegeben. Bitte wähle einen Modus.")
             self.logger.info("Verwendung: python src/main.py [modus]")
             self.logger.info(
-                "Verfügbare Modi: 'binaer' (1), 'nmea' (2), 'ascii' (3)")
+                "Verfügbare Modi: 'nmea' (3), '12bit' (100)")
             return
 
         if self.sonar.verbinden():
@@ -48,6 +48,26 @@ class Steuerung:
                 "Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
 
         self.logger.info("Sonar-Anwendung beendet.")
+
+    def starte_test_verarbeitung(self, test_modus):
+        self.logger.info("Sonar-Anwendung wird gestartet.")
+
+        if not test_modus:
+            self.logger.info(
+                "Kein Testmodus angegeben. Bitte wähle einen Modus.")
+            self.logger.info("Verwendung: python src/main.py [modus]")
+            self.logger.info(
+                "Verfügbare Modi: 'nmea' (3), '12bit' (100)")
+            return
+
+        filepath = 'logs/12bit_24102025_1'
+        try:
+            with open(filepath, 'rb') as f:
+                file = f.read()
+        except Exception as e:
+            self.logger.error(f"Fehler beim Lesen der Datei: {e}")
+
+        print(file)
 
     def fuehre_nmea_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von NMEA-Daten durch."""

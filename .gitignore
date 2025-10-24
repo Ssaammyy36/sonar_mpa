@@ -17,3 +17,5 @@ tests/*.log
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints/
 
+# logs
+*.log

@@ -3,6 +3,7 @@ from typing import List, Optional
 import matplotlib.pyplot as plt
 import ast
 import numpy as np
+np.set_printoptions(threshold=np.inf)
 
 
 class Datenverarbeitung:
@@ -113,7 +114,7 @@ def bytestring_to_array(byte_str):
     Wandelt ein Byte-String-Literal oder bytes-Objekt in ein NumPy-Array um,
     das die Rohdaten als uint8 enthält. Ideal für Sensordatenverarbeitung.
     """
-    # Falls byte_str ein Text ist, z. B. "b'\\x00\\x89...'"
+    # Falls byte_str ein Text ist, z. B. "b'\x00\x89...'"
     data = ast.literal_eval(byte_str)
 
     # In NumPy-Array umwandeln (1 Byte = 1 Element)
@@ -126,7 +127,8 @@ def bytestring_to_bin(byte_str):
     Wandelt ein Byte-String-Literal oder bytes-Objekt in ein NumPy-Array aus Bits (0/1) um.
     Ideal für die bitweise Analyse oder Dekodierung von Sensordaten.
     """
-    # Falls byte_str ein Text ist, z. B. "b'\\x00\\x89...'"
+    logger = get_logger(__name__)
+    # Falls byte_str ein Text ist, z. B. "b'\x00\x89...'"
     if isinstance(byte_str, str):
         data = ast.literal_eval(byte_str)
     else:
@@ -138,4 +140,5 @@ def bytestring_to_bin(byte_str):
     # Bytes → Bits (jedes Byte wird in 8 Bits zerlegt)
     bit_array = np.unpackbits(byte_array)
 
+    logger.debug(f"{bit_array}")
     return bit_array

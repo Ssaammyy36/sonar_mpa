@@ -1,6 +1,8 @@
 from utils.logger import get_logger
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
+from pathlib import Path
+import sys
 
 
 class Steuerung:
@@ -60,14 +62,19 @@ class Steuerung:
                 "Verfügbare Modi: 'nmea' (3), '12bit' (100)")
             return
 
-        filepath = 'logs/12bit_24102025_1'
+        script_path = Path(__file__).resolve().parent
+        project_path = script_path.parent
+        folder = 'logs'
+        filename = '12bit_24102025_1'
+        filepath = project_path / folder / filename
+
         try:
             with open(filepath, 'rb') as f:
                 file = f.read()
         except Exception as e:
             self.logger.error(f"Fehler beim Lesen der Datei: {e}")
 
-        print(file)
+        data = self.datenverarbeitung.parse_12_bit_binary_data(file)
 
     def fuehre_nmea_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von NMEA-Daten durch."""

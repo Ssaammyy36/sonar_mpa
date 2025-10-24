@@ -89,8 +89,10 @@ class Datenverarbeitung:
         try:
             self.logger.debug(f"Typ der Daten: {type(bin_data)}")
             self.logger.debug("Parsing 12-bit binary data...")
-            byte_arr = self.bytestring_to_bytearray(bin_data)
-            # bit_arr = self.bytearray_to_binarray(byte_arr)
+            bit_arr = self.bytestring_to_bitarray(bin_data)
+
+            # For further processing, we need the byte array
+            byte_arr = np.packbits(bit_arr)
 
             # Decode using 'latin-1' which maps each byte to a character without errors.
             # This will produce a string, but it might not be human-readable if the data is not text.
@@ -108,9 +110,10 @@ class Datenverarbeitung:
 
         return message
 
-    def bytestring_to_bytearray(self, byte_str):
+    def bytestring_to_bitarray(self, byte_str):
         """
-        Bytestring wird zu Clusterung von jeweils 8 bhit (1byte) gemacht
+        Wandelt einen Bytestring in ein NumPy-Array von Bits (0en und 1en) um,
+        gruppiert in 8er-Paare.
         """
         # Falls byte_str ein Text ist, z. B. "b'\x00\x89...'"
         if isinstance(byte_str, str):
@@ -121,15 +124,11 @@ class Datenverarbeitung:
         # In NumPy-Array umwandeln (1 Byte = 1 Element)
         byte_arr = np.frombuffer(data, dtype=np.uint8)
 
-        self.logger.debug(f"Daten in byte Darstellung: {byte_arr}")
-        return byte_arr
-
-    def bytearray_to_binarray(self, byte_arr):
-        """
-        Bytearray wird entclustert -> nur noch einzelne bits
-        """
         # Bytes → Bits (jedes Byte wird in 8 Bits zerlegt)
         bit_arr = np.unpackbits(byte_arr)
 
-        self.logger.debug(f"Daten in bin Darstellung: {bit_arr}")
-        return bit_arr
+        # In 8er-Paare gruppieren
+        bit_arr_reshaped = bit_arr.reshape(-1, 8)
+
+        self.logger.debug(f"Daten in Bit-Darstellung (gruppiert): {bit_arr_reshaped}")
+        return bit_arr_reshaped

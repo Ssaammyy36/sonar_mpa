@@ -4,11 +4,6 @@ __pycache__/
 *.py[cod]
 
 # Virtuelle Umgebungen
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
 
 # Test-Ordner (z.B. für temporäre Testdaten)
 tests/__pycache__/

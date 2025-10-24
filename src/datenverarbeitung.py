@@ -112,8 +112,8 @@ class Datenverarbeitung:
 
     def bytestring_to_bitarray(self, byte_str):
         """
-        Wandelt einen Bytestring in ein NumPy-Array von Bits (0en und 1en) um,
-        gruppiert in 8er-Paare.
+        Wandelt einen Bytestring in ein NumPy-Array von Bits (0en und 1en) um.
+        Die Bits werden für die Log-Ausgabe in 8er-Paare gruppiert.
         """
         # Falls byte_str ein Text ist, z. B. "b'\x00\x89...'"
         if isinstance(byte_str, str):
@@ -127,8 +127,7 @@ class Datenverarbeitung:
         # Bytes → Bits (jedes Byte wird in 8 Bits zerlegt)
         bit_arr = np.unpackbits(byte_arr)
 
-        # In 8er-Paare gruppieren
-        bit_arr_reshaped = bit_arr.reshape(-1, 8)
-
-        self.logger.debug(f"Daten in Bit-Darstellung (gruppiert): {bit_arr_reshaped}")
-        return bit_arr_reshaped
+        # Log the bits in 8er-Paare for display purposes
+        self.logger.debug(f"Daten in Bit-Darstellung (gruppiert): {bit_arr.reshape(-1, 8)}")
+        
+        return bit_arr

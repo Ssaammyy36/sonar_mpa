@@ -2,8 +2,12 @@
 import time
 import os
 import sys
+from pathlib import Path
 
-from echosounderapi.echosndr import DualEchosounder
+project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from src.echosounderapi.echosndr import DualEchosounder
 
 COMPORT: str = "COM5"
 BAUDRATE: int = 115200

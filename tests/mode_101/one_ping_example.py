@@ -27,6 +27,9 @@ else:
         ss.SetValue("IdOutput", OUTPUT_MODE)     # Set outputmode 
         ss.SetValue("IdPingonce", "1") 
 
+        #ss.Start()
+        time.sleep(2.0)
+
         print("--- Start Ping Once Test ---")
         #print("Working Frequency:", ss.GetValue("IdGetWorkFreq"), "Hz")
         #time.sleep(2.0)                       # pause for 2 seconds

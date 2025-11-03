@@ -24,97 +24,65 @@ class Steuerung:
         """Hauptmethode, die den Anwendungsablauf steuert."""
         self.logger.info("Sonar-Anwendung wird gestartet.")
 
+        # Checkt TestModus
         if not test_modus:
-            self.logger.info(
-                "Kein Testmodus angegeben. Bitte wähle einen Modus.")
-            self.logger.info("Verwendung: python src/main.py [modus]")
-            self.logger.info(
-                "Verfügbare Modi: 'nmea' (3), '12bit' (100)")
+            self.logger.info("Kein Testmodus angegeben !!! Bitte wähle einen Modus.")
             return
 
+        # Verbinden 
         if self.sonar.verbinden():
             self.logger.info("Sonar erfolgreich verbunden.")
 
+            # Ablauf Modi auswäheln 
             if test_modus.lower() in ('3', 'nmea'):
                 self.fuehre_nmea_test_durch()
-            elif test_modus.lower() in ('100', '12bit'):
+            elif test_modus.lower() in ('100', '8bit'):
+                print(...)
+            elif test_modus.lower() in ('101', '16bit'):
                 self.fuehre_12_bit_binary_test_durch()
             else:
-                self.logger.warning(
-                    f"Unbekannter Testmodus: '{test_modus}'. Verfügbare Modi: 'binaer' (1), 'nmea' (2), 'ascii' (3).")
-
+                self.logger.warning(f"Unbekannter Testmodus: '{test_modus}'!!!")
+            
+            # Verbindung Trennen
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
         else:
-            self.logger.error(
-                "Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
+            self.logger.error("Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
 
         self.logger.info("Sonar-Anwendung beendet.")
-
-    def starte_test_verarbeitung(self, test_modus):
-        self.logger.info("--- Test zurDatenverarbeitung wird gestartet. ---")
-
-        if not test_modus:
-            self.logger.info(
-                "Kein Testmodus angegeben. Bitte wähle einen Modus.")
-            self.logger.info("Verwendung: python src/main.py [modus]")
-            self.logger.info("Verfügbare Modi: 'nmea' (3), '12bit' (100)")
-            return
-
-        # Dateipfad
-        script_path = Path(__file__).resolve().parent
-        project_path = script_path.parent
-        folder = 'example_output'
-        filename = 'hex_24102025_1434'
-        filepath = project_path / folder / filename
-
-        # Datei lesen
-        try:
-            with open(filepath, 'r') as f:
-                file = f.read()
-        except Exception as e:
-            self.logger.error(f"Fehler beim Lesen der Datei: {e}")
-
-        # Verarbeiten
-        data = self.datenverarbeitung.parse_12_bit_binary_data(file)
 
     def fuehre_nmea_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von NMEA-Daten durch."""
         self.logger.info("Starte NMEA-Daten-Test...")
-        self.sonar.konfigurieren(
-            output_mode="3", frequency="low", interval="1.0", sampl_freq="100000")
-        nmea_daten = self.sonar.daten_lesen(dauer=5.0)
+        self.sonar.konfigurieren(output_mode="3", frequency="low", interval="1.0", sampl_freq="100000")
+        
+        # Lesen
+        nmea_daten = self.sonar.daten_lesen(dauer=5.0, print_mode=True)
 
-        print(nmea_daten)
-
+        # Aufbereiten
         if nmea_daten:
             tiefen = self.datenverarbeitung.parse_nmea_tiefe(nmea_daten)
             if tiefen:
-                # Formatiert die Liste der Tiefen für eine bessere Lesbarkeit im Log
+
+                # Ausgeben
                 formatierte_tiefen = ", ".join([f"{t:.2f}m" for t in tiefen])
-                self.logger.info(
-                    f"{len(tiefen)} Tiefenwerte erfolgreich geparst: [{formatierte_tiefen}]")
+                self.logger.info(f"{len(tiefen)} Tiefenwerte erfolgreich geparst: [{formatierte_tiefen}]")
             else:
-                self.logger.info(
-                    "NMEA-Daten empfangen, aber keine gültigen Tiefenwerte ($SDDBT) gefunden.")
+                self.logger.info("NMEA-Daten empfangen, aber keine gültigen Tiefenwerte ($SDDBT) gefunden.")
         else:
             self.logger.warning("Keine NMEA-Daten vom Sonar empfangen.")
 
     def fuehre_12_bit_binary_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
         self.logger.info("Starte 12-Bit Binärdaten-Test...")
-
-        self.sonar.konfigurieren(
-            output_mode="100", frequency="high", interval="0.2", sampl_freq="100000")
+        self.sonar.konfigurieren(output_mode="100", frequency="high", interval="0.2", sampl_freq="100000")
+        
+        # Scannen 
         binaer_daten = self.sonar.daten_lesen(dauer=2.0)
 
+        # Verarbeiten
         if binaer_daten:
-            amplituden = self.datenverarbeitung.parse_12_bit_binary_data(
-                binaer_daten)
-            # amplituden = binaer_daten
-
-            self.logger.info(
-                f"{len(amplituden)} Amplituden-Samples erfolgreich geparst.")
-            # self.datenverarbeitung.plotte_echogramm(amplituden, titel="Sonar Echo Amplitude (Binär-Modus)")
+            amplituden = self.datenverarbeitung.parse_12_bit_binary_data(binaer_daten)
+            self.logger.info(f"{len(amplituden)} Amplituden-Samples erfolgreich geparst.")
         else:
             self.logger.warning("Keine Binärdaten vom Sonar empfangen.")

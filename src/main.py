@@ -12,14 +12,13 @@ def main():
     try:
         # --- HIER DEN GEWÜNSCHTEN TESTMODUS EINGEBEN ---
         # '3' oder 'nmea':   für den NMEA-Tiefendaten-Test
-        # '100' oder '12bit': für den 12-Bit Binärdaten-Test mit Plot
+        # '100': für 12-Bit  
+        # '101': für den 8-Bit Binärdaten-Test mit Plot
 
-        test_modus = "100"
+        test_modus = "3"
 
         steuerung = Steuerung()
-        # Übergib den ausgewählten Modus an die Steuerungsklasse
-        # steuerung.starte_anwendung(test_modus)
-        steuerung.starte_test_verarbeitung(test_modus)
+        steuerung.starte_anwendung(test_modus)
     except Exception as e:
         print(f"Ein unerwarteter Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

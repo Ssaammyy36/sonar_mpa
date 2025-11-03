@@ -69,30 +69,37 @@ class Sonar:
         self.logger.info(
             f"Konfiguration: {output_mode=}, {frequency=}, {interval=}, {pulse_length=}, {sampl_freq=}")
 
-    def daten_lesen(self, dauer: float = 2.0) -> Optional[bytes]:
+    def daten_lesen(self, dauer: float = 2.0, print_mode=False) -> Optional[bytes]:
         """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit hex"""
+        
+        # Check for Sonar Objekt
         if not self.echosounder:
             self.logger.warning(
                 "Sonar nicht verbunden. Datenlesen nicht möglich.")
             return None
 
+        # Scannen 
         self.logger.info(f"Starte Ping für {dauer} Sekunden...")
         if not self.echosounder.Start():
             self.logger.error("Starten des Echolots fehlgeschlagen.")
             return None
-
         time.sleep(dauer)
-        # Buffer size, kann angepasst werden
         data = self.echosounder.ReadData(1024)
-        if data:
-            # Loggt die ersten 100 Bytes der Rohdaten für Debugging-Zwecke.
-            # self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
-            self.logger.debug(f"{len(data)} Bytes empfangen: {data}")
-            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            self.logger.debug(f"sonar.daten_lesen(): type(data) = {type(data)}")
-        else:
-            self.logger.debug("Keine Daten vom Sonar empfangen.")
-        self.echosounder.Stop()  # Stoppt das Pingen nach dem Lesen
+
+        print("test")
+
+        # Ausgeben 
+        if print_mode == True:
+            if data:
+                # Loggt die ersten 100 Bytes der Rohdaten für Debugging-Zwecke.
+                # self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
+                self.logger.debug(f"{len(data)} Bytes empfangen: {data}")
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                self.logger.debug(f"sonar.daten_lesen(): type(data) = {type(data)}")
+            else:
+                self.logger.debug("Keine Daten vom Sonar empfangen.")
+            self.echosounder.Stop()  # Stoppt das Pingen nach dem Lesen
+        
         return data
 
     def test(self):

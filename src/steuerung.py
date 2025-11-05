@@ -37,9 +37,9 @@ class Steuerung:
             # Ablauf Modi auswäheln 
             if test_modus.lower() in ('3', 'nmea'):
                 self.fuehre_nmea_test_durch()
-            elif test_modus.lower() in ('100', '8bit'):
-                print(...)
-            elif test_modus.lower() in ('101', '16bit'):
+            elif test_modus.lower() in ('2', '10bit'):
+                self.fuehre_binary_test_durch()
+            elif test_modus.lower() in ('4', '12bit'):
                 self.fuehre_binary_test_durch()
             else:
                 self.logger.warning(f"Unbekannter Testmodus: '{test_modus}'!!!")
@@ -84,8 +84,8 @@ class Steuerung:
 
         # Verarbeiten
         if binaer_daten:
-            amplituden = self.datenverarbeitung.parse_12_bit_binary_data(binaer_daten)
-            self.logger.info(f"{len(amplituden)} Amplituden-Samples erfolgreich geparst.")
+            # ...
+            pass
         else:
             self.logger.warning("Keine Binärdaten vom Sonar empfangen.")
 
@@ -96,11 +96,11 @@ if __name__ == "__main__":
     """
     try:
         # --- HIER DEN GEWÜNSCHTEN TESTMODUS EINGEBEN ---
-        # '3' oder 'nmea':   für den NMEA-Tiefendaten-Test
-        # '100': für 12-Bit  
-        # '101': für den 8-Bit Binärdaten-Test mit Plot
+        # '3': für den NMEA
+        # '2': für 10-Bit  
+        # '4': für den 23-Bit 
 
-        test_modus = "3"
+        test_modus = "4"
 
         steuerung = Steuerung()
         steuerung.starte_anwendung(test_modus)

@@ -86,10 +86,11 @@ class Sonar:
         time.sleep(dauer)
         data = self.echosounder.ReadData(1024)
 
-        # Ausgeben 
+        # Loggen 
         if data:
             if print_mode == True:
-                self.logger.debug(f"{len(data)} Bytes empfangen: {data}")
+                self.logger.debug(f"{len(data)} Bytes empfangen: \n{data}")
+                self.logger.debug(f"Dekodiert: \n{data.decode("latin_1")}")
         else:
             self.logger.debug("Keine Daten vom Sonar empfangen.")
 

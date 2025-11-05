@@ -38,9 +38,9 @@ class Steuerung:
             if test_modus.lower() in ('3', 'nmea'):
                 self.fuehre_nmea_test_durch()
             elif test_modus.lower() in ('2', '10bit'):
-                self.fuehre_binary_test_durch()
+                pass
             elif test_modus.lower() in ('4', '12bit'):
-                self.fuehre_binary_test_durch()
+                self.fuehre_12_bit_binary_test_durch()
             else:
                 self.logger.warning(f"Unbekannter Testmodus: '{test_modus}'!!!")
             
@@ -74,10 +74,11 @@ class Steuerung:
         else:
             self.logger.warning("Keine NMEA-Daten vom Sonar empfangen.")
 
-    def fuehre_binary_test_durch(self):
+    def fuehre_12_bit_binary_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
+        
         self.logger.info("Starte 12-Bit Binärdaten-Test...")
-        self.sonar.konfigurieren(output_mode="100", frequency="high", interval="0.2", sampl_freq="100000")
+        self.sonar.konfigurieren(output_mode="4", frequency="high", interval="0.2", sampl_freq="100000")
         
         # Scannen 
         binaer_daten = self.sonar.daten_lesen(dauer=2.0, print_mode=True)
@@ -98,7 +99,7 @@ if __name__ == "__main__":
         # --- HIER DEN GEWÜNSCHTEN TESTMODUS EINGEBEN ---
         # '3': für den NMEA
         # '2': für 10-Bit  
-        # '4': für den 23-Bit 
+        # '4': für den 12-Bit 
 
         test_modus = "4"
 

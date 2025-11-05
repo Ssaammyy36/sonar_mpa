@@ -215,6 +215,10 @@ class Echosounder():
                 fullcommand = command[1] + '\r'
                 self._serial_port.write(bytes(fullcommand, 'latin_1'))
                 result = self.__SendCommandResponseCheck()
+                
+                if "IdInfo" != command[0] and "IdGo" != command[0]:
+                    self.__GetEchosounderInfo()  
+                    
                 self.__WaitCommandPrompt(1000)
 
         if True == wasrunning:
@@ -395,3 +399,4 @@ if __name__ == "__main__":
             print("Working Frequency:", ss.GetValue("IdGetWorkFreq"), "Hz")
         else:
             print("Echosounder is not detected")
+

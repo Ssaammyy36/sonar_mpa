@@ -19,7 +19,7 @@ def get_logger(name: str = __name__) -> logging.Logger:
     if not logger.handlers:
         # Formatter definieren
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            '%(asctime)s - %(levelname)-8s - %(name)-15s:%(funcName)-28s - %(message)s',
             datefmt='%H:%M:%S' # Nur Stunde, Minute, Sekunde
         )
         

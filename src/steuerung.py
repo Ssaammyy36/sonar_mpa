@@ -76,12 +76,12 @@ class Steuerung:
 
     def fuehre_12_bit_binary_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
-        
+
         self.logger.info("Starte 12-Bit Binärdaten-Test...")
-        self.sonar.konfigurieren(output_mode="4", frequency="high", interval="0.2", sampl_freq="100000")
+        self.sonar.konfigurieren(output_mode="4", frequency="low", interval="0.2", sampl_freq="100000")
         
         # Scannen 
-        binaer_daten = self.sonar.daten_lesen(dauer=2.0, print_mode=True)
+        binaer_daten = self.sonar.daten_lesen(dauer=4.0, print_mode=True)
 
         # Verarbeiten
         if binaer_daten:

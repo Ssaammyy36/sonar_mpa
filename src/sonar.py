@@ -84,16 +84,23 @@ class Sonar:
             self.logger.error("Starten des Echolots fehlgeschlagen.")
             return None
         time.sleep(dauer)
-        data = self.echosounder.ReadData(1024)
+        data = self.echosounder.ReadData(4096)
 
         # Loggen 
         if data:
             if print_mode == True:
-                self.logger.debug(f"{len(data)} Bytes empfangen: \n{data}")
-                self.logger.debug(f"Dekodiert: \n{data.decode("latin_1")}")
+                # Binary Darstellung:
+                #self.logger.debug(f"Rohe Daten: {data}")
+
+                # Dekodieren (ASCII/Latin-1)
+                text_repr = data.decode('latin-1', errors='replace').replace('\r\n', '\n')
+                self.logger.debug(f"Text-Darstellung: {text_repr}")
+
+                # Hex
+                #hex_repr = data.hex(' ')
+                #self.logger.debug(f"Hex-Darstellung: {hex_repr}")
         else:
             self.logger.debug("Keine Daten vom Sonar empfangen.")
 
         self.echosounder.Stop()  
         return data
-

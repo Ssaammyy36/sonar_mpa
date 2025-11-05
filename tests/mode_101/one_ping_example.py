@@ -10,7 +10,7 @@ from src.echosounderapi.echosndr import DualEchosounder
 
 COMPORT: str = "COM5"
 BAUDRATE: int = 115200
-OUTPUT_MODE: str = "101" # 8 bit
+OUTPUT_MODE: str = "4" # 8 bit
 
 try:
     ss = DualEchosounder(f"\\\\.\\{COMPORT}", BAUDRATE)
@@ -25,7 +25,7 @@ else:
         ss.SetCurrentTime()              # Sync Echosounder's time with the host PC
         ss.SendCommand("IdSetHighFreq")  # Set High working frequency
         ss.SetValue("IdOutput", OUTPUT_MODE)     # Set outputmode 
-        ss.SetValue("IdPingonce", "1") 
+        ss.SetValue("IdPingonce", "0") 
 
         #ss.Start()
         time.sleep(2.0)

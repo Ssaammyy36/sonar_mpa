@@ -22,11 +22,12 @@ class Steuerung:
 
     def starte_anwendung(self, test_modus: str | None = None):
         """Hauptmethode, die den Anwendungsablauf steuert."""
+
         self.logger.info("Sonar-Anwendung wird gestartet.")
 
         # Checkt TestModus
         if not test_modus:
-            self.logger.info("Kein Testmodus angegeben !!! Bitte wähle einen Modus.")
+            self.logger.warning("Kein Testmodus angegeben !!! Bitte wähle einen Modus.")
             return
 
         # Verbinden 
@@ -39,7 +40,7 @@ class Steuerung:
             elif test_modus.lower() in ('100', '8bit'):
                 print(...)
             elif test_modus.lower() in ('101', '16bit'):
-                self.fuehre_12_bit_binary_test_durch()
+                self.fuehre_binary_test_durch()
             else:
                 self.logger.warning(f"Unbekannter Testmodus: '{test_modus}'!!!")
             
@@ -53,6 +54,7 @@ class Steuerung:
 
     def fuehre_nmea_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von NMEA-Daten durch."""
+
         self.logger.info("Starte NMEA-Daten-Test...")
         self.sonar.konfigurieren(output_mode="3", frequency="low", interval="1.0", sampl_freq="100000")
         
@@ -72,13 +74,13 @@ class Steuerung:
         else:
             self.logger.warning("Keine NMEA-Daten vom Sonar empfangen.")
 
-    def fuehre_12_bit_binary_test_durch(self):
+    def fuehre_binary_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
         self.logger.info("Starte 12-Bit Binärdaten-Test...")
         self.sonar.konfigurieren(output_mode="100", frequency="high", interval="0.2", sampl_freq="100000")
         
         # Scannen 
-        binaer_daten = self.sonar.daten_lesen(dauer=2.0)
+        binaer_daten = self.sonar.daten_lesen(dauer=2.0, print_mode=True)
 
         # Verarbeiten
         if binaer_daten:

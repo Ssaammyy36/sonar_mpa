@@ -20,10 +20,6 @@ class Datenverarbeitung:
         """
         self.logger = get_logger(__name__)
 
-    def test(self):
-        """Loggt eine Test-Nachricht, um die Erreichbarkeit zu prüfen."""
-        self.logger.debug("Datenverarbeitung erreichbar.")
-
     def parse_nmea_tiefe(self, nmea_data: Optional[bytes]) -> List[float]:
         """Parst NMEA-Daten, um Tiefenwerte in Metern aus $SDDBT-Sätzen zu extrahieren."""
         tiefen = []
@@ -47,7 +43,7 @@ class Datenverarbeitung:
 
         return tiefen
 
-    def parse_12_bit_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
+    def parse_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
         """Parses the raw binary data from the sonar into a dictionary with the meaning of the bytes."""
         message = {}
         if not bin_data:

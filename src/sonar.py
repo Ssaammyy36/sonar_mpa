@@ -86,22 +86,13 @@ class Sonar:
         time.sleep(dauer)
         data = self.echosounder.ReadData(1024)
 
-        print("test")
-
         # Ausgeben 
-        if print_mode == True:
-            if data:
-                # Loggt die ersten 100 Bytes der Rohdaten für Debugging-Zwecke.
-                # self.logger.debug(f"{len(data)} Bytes empfangen: {data[:100]}...")
+        if data:
+            if print_mode == True:
                 self.logger.debug(f"{len(data)} Bytes empfangen: {data}")
-                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                self.logger.debug(f"sonar.daten_lesen(): type(data) = {type(data)}")
-            else:
-                self.logger.debug("Keine Daten vom Sonar empfangen.")
-            self.echosounder.Stop()  # Stoppt das Pingen nach dem Lesen
-        
+        else:
+            self.logger.debug("Keine Daten vom Sonar empfangen.")
+
+        self.echosounder.Stop()  
         return data
 
-    def test(self):
-        """Loggt eine Test-Nachricht, um die Erreichbarkeit zu prüfen."""
-        self.logger.debug(f"Sonar erreichbar.")

@@ -85,40 +85,15 @@ class Steuerung:
 
         self.logger.info("Starte 10-Bit String-Test...")
         self.sonar.konfigurieren(output_mode="2", frequency="low", interval="0.2", sampl_freq="100000")
-        
-        # Scannen 
         binaer_daten = self.sonar.daten_lesen(dauer=4.0, print_mode=True)
-
-        # Verarbeiten
-        if binaer_daten:
-            # Dekodieren (ASCII/Latin-1)
-            text_repr = binaer_daten.decode('latin-1', errors='replace').replace('\r\n', '\n')
-            self.logger.debug(f"Text-Darstellung: {text_repr}")
-            
-            # Parsen
-            # ...
-        else:
-            self.logger.warning("Keine Binärdaten vom Sonar empfangen.")
+        self._verarbeite_echogram_daten(binaer_daten)
 
     def fuehre_12_bit_echogram_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von String durch."""
-
         self.logger.info("Starte 12-Bit String-Test...")
         self.sonar.konfigurieren(output_mode="4", frequency="low", interval="0.2", sampl_freq="100000")
-        
-        # Scannen 
         binaer_daten = self.sonar.daten_lesen(dauer=4.0, print_mode=True)
-
-        # Verarbeiten
-        if binaer_daten:
-            # Dekodieren (ASCII/Latin-1)
-            text_repr = binaer_daten.decode('latin-1', errors='replace').replace('\r\n', '\n')
-            self.logger.debug(f"Text-Darstellung: {text_repr}")
-            
-            # Parsen
-            # ...
-        else:
-            self.logger.warning("Keine Binärdaten vom Sonar empfangen.")
+        self._verarbeite_echogram_daten(binaer_daten)
 
     def fuehre_8_bit_binary_test_durch(self):
         """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""

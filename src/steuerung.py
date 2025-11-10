@@ -20,7 +20,7 @@ class Steuerung:
 
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
-    def starte_anwendung(self, test_modus: str | None = None):
+    def starte_anwendung(self, test_modus: str | None = None, frequency: str ="low"):
         """Hauptmethode, die den Anwendungsablauf steuert."""
 
         self.logger.info("Sonar-Anwendung wird gestartet.")
@@ -58,14 +58,14 @@ class Steuerung:
 
         self.logger.info("Sonar-Anwendung beendet.")
 
-    def fuehre_nmea_test_durch(self):
+    def fuehre_nmea_test_durch(self, frequency="low"):
         """Führt einen Test zur Aufnahme und Verarbeitung von NMEA-Daten durch."""
 
         self.logger.info("Starte NMEA-Daten-Test...")
-        self.sonar.konfigurieren(output_mode="3", frequency="low", interval="1.0", sampl_freq="100000")
+        self.sonar.konfigurieren(output_mode="3", frequency=frequency)
         
         # Lesen
-        nmea_daten = self.sonar.daten_lesen(dauer=5.0, print_mode=True)
+        nmea_daten = self.sonar.daten_lesen()
 
         # Aufbereiten
         if nmea_daten:
@@ -80,33 +80,56 @@ class Steuerung:
         else:
             self.logger.warning("Keine NMEA-Daten vom Sonar empfangen.")
 
-    def fuehre_10_bit_echogram_test_durch(self):
+    def fuehre_10_bit_echogram_test_durch(self, frequency="low"):
         """Führt einen Test zur Aufnahme und Verarbeitung von String durch."""
 
         self.logger.info("Starte 10-Bit String-Test...")
-        self.sonar.konfigurieren(output_mode="2", frequency="low", interval="0.2", sampl_freq="100000")
-        binaer_daten = self.sonar.daten_lesen(dauer=4.0, print_mode=True)
-        self._verarbeite_echogram_daten(binaer_daten)
+        self.sonar.konfigurieren(output_mode="2", frequency=frequency)
+        
+        # Daten Lesen 
+        echogram_daten = self.sonar.daten_lesen()
+        
+        # Verarbeiten
+        if echogram_daten:
+            # loggen
+            self.logger.debug(f"Darstellung des Echogramms: {echogram_daten.decode("latin_1")}")
 
-    def fuehre_12_bit_echogram_test_durch(self):
+            # Parsen
+            # ...
+        else:
+            self.logger.warning("Keine Echogramm vom Sonar empfangen.")
+
+    def fuehre_12_bit_echogram_test_durch(self, frequency="low"):
         """Führt einen Test zur Aufnahme und Verarbeitung von String durch."""
-        self.logger.info("Starte 12-Bit String-Test...")
-        self.sonar.konfigurieren(output_mode="4", frequency="low", interval="0.2", sampl_freq="100000")
-        binaer_daten = self.sonar.daten_lesen(dauer=4.0, print_mode=True)
-        self._verarbeite_echogram_daten(binaer_daten)
 
-    def fuehre_8_bit_binary_test_durch(self):
+        self.logger.info("Starte 12-Bit String-Test...")
+        self.sonar.konfigurieren(output_mode="4", frequency=frequency)
+        
+        # Scannen 
+        echogram_daten = self.sonar.daten_lesen()
+        
+        # Verarbeiten
+        if echogram_daten:
+            # loggen
+            self.logger.debug(f"Darstellung des Echogramms: {echogram_daten.decode("latin_1")}")
+
+            # Parsen
+            # ...
+        else:
+            self.logger.warning("Keine Echogramm vom Sonar empfangen.")
+
+    def fuehre_8_bit_binary_test_durch(self, frequency="low"):
         """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
 
         self.logger.info("Starte 12-Bit Binärdaten-Test...")
-        self.sonar.konfigurieren(output_mode="101", frequency="low", interval="0.2", sampl_freq="100000")
+        self.sonar.konfigurieren(output_mode="101", frequency=frequency)
         
         # Scannen 
-        binaer_daten = self.sonar.daten_lesen(dauer=4.0, print_mode=True)
+        binaer_daten = self.sonar.daten_lesen()
 
         # Verarbeiten
         if binaer_daten:
-            # Hex
+            # Hex loggen
             hex_repr = binaer_daten.hex(' ')
             self.logger.debug(f"Hex-Darstellung: {hex_repr}")
 
@@ -115,18 +138,18 @@ class Steuerung:
         else:
             self.logger.warning("Keine Binärdaten vom Sonar empfangen.")
 
-    def fuehre_12_bit_binary_test_durch(self):
+    def fuehre_12_bit_binary_test_durch(self, frequency="low"):
         """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
 
         self.logger.info("Starte 12-Bit Binärdaten-Test...")
-        self.sonar.konfigurieren(output_mode="100", frequency="low", interval="0.2", sampl_freq="100000")
+        self.sonar.konfigurieren(output_mode="100", frequency=frequency)
         
         # Scannen 
-        binaer_daten = self.sonar.daten_lesen(dauer=4.0, print_mode=True)
+        binaer_daten = self.sonar.daten_lesen()
 
         # Verarbeiten
         if binaer_daten:
-            # Hex
+            # Hex loggen
             hex_repr = binaer_daten.hex(' ')
             self.logger.debug(f"Hex-Darstellung: {hex_repr}")
 
@@ -148,10 +171,10 @@ if __name__ == "__main__":
         # 100: für 12-Bit-Binary
         # 101: für 8-Bit-Binary
 
-        test_modus = "2"
+        test_modus = "4"
 
         steuerung = Steuerung()
-        steuerung.starte_anwendung(test_modus)
+        steuerung.starte_anwendung(test_modus, frequency="low")
     except Exception as e:
         print(f"Ein unerwarteter Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

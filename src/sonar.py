@@ -45,14 +45,15 @@ class Sonar:
             # Das Objekt wird vom Garbage Collector entfernt.
             self.echosounder = None
 
-    def konfigurieren(self, output_mode: str, frequency: str, interval: str, pulse_length: str = "20", sampl_freq: str = "100000"):
+    def konfigurieren(self, output_mode: str, frequency: str):
         """Konfiguriert das Echolot mit den gegebenen Parametern."""
+        
+        # Check
         if not self.echosounder:
-            self.logger.warning(
-                "Sonar nicht verbunden. Konfiguration nicht möglich.")
+            self.logger.warning("Sonar nicht verbunden. Konfiguration nicht möglich.")
             return
 
-        self.logger.info("Konfiguriere Echolot...")
+        # Config
         self.echosounder.SetValue("IdOutput", output_mode)
 
         if frequency in ("high", "200kHz"):
@@ -62,14 +63,18 @@ class Sonar:
         else:
             self.logger.error(f"Unbekannte Frequenz: {frequency}")
             return
+        self.logger.info(f"Konfiguration: {output_mode=}, {frequency=}")
 
-        self.echosounder.SetValue("IdInterval", interval)
-        self.echosounder.SetValue("IdTxLength", pulse_length)
-        self.echosounder.SetValue("IdSamplFreq", sampl_freq)
-        self.logger.info(
-            f"Konfiguration: {output_mode=}, {frequency=}, {interval=}, {pulse_length=}, {sampl_freq=}")
+        # für Mode 4
+        self.echosounder.SetValue("IdRange", "3000")
+        self.echosounder.SetValue("IdInterval", "1")
+        self.echosounder.SetValue("IdDeadzone", "200")
+        self.echosounder.SetValue("IdTxLength", "50")
+        self.echosounder.SetValue("IdTxPower", "-6")
+        self.echosounder.SetValue("IdGain", "-6")
+                                   
 
-    def daten_lesen(self, dauer: float = 2.0, print_mode=False) -> Optional[bytes]:
+    def daten_lesen(self, dauer: float = 2.0) -> Optional[bytes]:
         """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit hex"""
         
         # Check for Sonar Objekt

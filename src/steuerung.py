@@ -119,11 +119,17 @@ class Steuerung:
 
             # Parsen
             measurements = self.datenverarbeitung.pars_data_form_echogram(echogram_str)
-            print(f"Anzahl der Datenpunkte: {len(measurements)}")
-            print(f"Beispiel-Datenpunkte: {measurements[:10]}...")
 
-            # Dastellen
-            self.datenverarbeitung.plotte_datenpunkte(measurements, titel="Test-Messung vom Sonar")
+            if measurements:
+                # Loggen der Ergebnisse
+                self.logger.info(f"{len(measurements)} Ping(s) erfolgreich geparst.")
+                for i, ping in enumerate(measurements):
+                    self.logger.debug(f"  - Ping {i+1}: {len(ping)} Datenpunkte, Beispiel: {ping[:5]}...")
+
+                # Darstellen aller Pings in einem Diagramm
+                self.datenverarbeitung.plotte_datenpunkte(measurements, titel="12-Bit Echogramm Messung")
+            else:
+                self.logger.warning("Echogramm-Daten empfangen, aber keine gültigen Datenblöcke gefunden.")
         else:
             self.logger.warning("Keine Echogramm vom Sonar empfangen.")
 

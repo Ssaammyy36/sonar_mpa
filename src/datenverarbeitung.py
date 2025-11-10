@@ -43,57 +43,91 @@ class Datenverarbeitung:
 
         return tiefen
     
-    def pars_data_form_echogram(self, text: str) -> list[int]:
+    def pars_data_form_echogram(self, text: str) -> List[List[int]]:
         """
-        Extrahiert den ersten Datenblock, der nach '##DataStart' beginnt.
-        Der Block endet entweder bei '##DataEnd' oder am Ende des Strings.
+        Extrahiert alle Datenblöcke, die mit '##DataStart' beginnen.
+        Ein Datenblock endet entweder mit '##DataEnd' oder vor dem nächsten '#DeviceID'.
+        Gibt eine Liste von Listen zurück, wobei jede innere Liste einen Datenblock darstellt.
         """
         start_marker = "##DataStart"
-        end_marker = "##DataEnd"
+        end_marker_1 = "##DataEnd"
+        end_marker_2 = "#DeviceID"
         
-        # Finde die Startposition nach dem Start-Marker
-        start_index = text.find(start_marker)
-        if start_index == -1:
-            print("Start-Marker wurde nicht gefunden")
-            return []
+        alle_daten_bloecke = []
+        current_pos = 0
+        
+        while True:
+            # Finde die Startposition des nächsten Pakets
+            start_index = text.find(start_marker, current_pos)
+            if start_index == -1:
+                # Kein weiteres Paket gefunden
+                break
 
-        # Die eigentlichen Daten beginnen nach dem Marker
-        daten_start_index = start_index + len(start_marker)
+            daten_start_index = start_index + len(start_marker)
 
-        # Suche nach dem End-Marker, aber erst *nachdem* der Start-Marker kam
-        end_index = text.find(end_marker, daten_start_index)
+            # Finde die Position des nächsten End-Markers
+            end_index_1 = text.find(end_marker_1, daten_start_index)
+            end_index_2 = text.find(end_marker_2, daten_start_index)
 
-        if end_index == -1:
-            # Kein End-Marker gefunden: Nimm alles ab dem Start-Marker bis zum Ende
-            daten_block_text = text[daten_start_index:]
-        else:
-            # End-Marker gefunden: Nimm den Teil dazwischen
-            daten_block_text = text[daten_start_index:end_index]
+            # Wähle den frühesten End-Marker
+            end_index = -1
+            if end_index_1 != -1 and end_index_2 != -1:
+                end_index = min(end_index_1, end_index_2)
+            elif end_index_1 != -1:
+                end_index = end_index_1
+            elif end_index_2 != -1:
+                end_index = end_index_2
             
-        # Bereinige den Block und extrahiere die Zahlen
-        daten_punkte = [int(wert) for wert in daten_block_text.strip().split() if wert.strip().isdigit()]
-        return daten_punkte
+            daten_block_text = ""
+            if end_index == -1:
+                # Keiner der End-Marker gefunden, nimm den Rest des Textes
+                daten_block_text = text[daten_start_index:]
+                current_pos = len(text) # beende die Schleife
+            else:
+                daten_block_text = text[daten_start_index:end_index]
+                current_pos = end_index
+
+            daten_punkte = [int(wert) for wert in daten_block_text.strip().split() if wert.strip().isdigit()]
+            if daten_punkte:
+                alle_daten_bloecke.append(daten_punkte)
+            
+            if end_index == -1:
+                break
+
+        if not alle_daten_bloecke:
+            self.logger.warning(f"Keine gültigen Datenblöcke mit '{start_marker}' im Text gefunden.")
+        else:
+            self.logger.info(f"{len(alle_daten_bloecke)} Datenpakete gefunden und geparst.")
+
+        return alle_daten_bloecke
     
-    def plotte_datenpunkte(self, datenpunkte: List[int], titel: str = "Echogramm-Daten"):
-        """Erstellt und zeigt ein Liniendiagramm für eine Liste von Datenpunkten."""
+    def plotte_datenpunkte(self, daten_bloecke: List[List[int]], titel: str = "Echogramm-Daten"):
+        """
+        Erstellt und zeigt ein Liniendiagramm für alle Amplituden aus allen Datenblöcken.
+        Alle Datenpunkte werden zu einer einzigen Linie zusammengefügt.
+        """
         
-        if not datenpunkte:
+        if not daten_bloecke:
             self.logger.warning("Keine Datenpunkte zum Plotten vorhanden.")
             return
 
-        self.logger.info(f"Erstelle Plot für {len(datenpunkte)} Datenpunkte...")
+        self.logger.info(f"Erstelle Plot für {len(daten_bloecke)} Datenblock/Blöcke...")
+
+        # Füge alle Datenpunkte aus allen Blöcken zu einer einzigen Liste zusammen
+        alle_amplituden = [punkt for block in daten_bloecke for punkt in block]
 
         # Erstellt eine neue Figur (das Fenster) und eine Achse (das Diagramm darin)
         fig, ax = plt.subplots(figsize=(12, 6))
 
-        # Plottet die Datenpunkte auf der Achse
-        ax.plot(datenpunkte)
+        # Plottet alle Amplituden als eine einzige Linie
+        ax.plot(alle_amplituden, label='Alle Amplituden')
 
-        # Fügt Titel und Beschriftungen hinzu, um das Diagramm verständlich zu machen
+        # Fügt Titel und Beschriftungen hinzu
         ax.set_title(titel)
-        ax.set_xlabel("Datenpunkt-Index")
+        ax.set_xlabel("Datenpunkt-Index (über alle Pings)")
         ax.set_ylabel("Intensität (Rohwert)")
-        ax.grid(True)  # Fügt ein Gitter für bessere Lesbarkeit hinzu
+        ax.grid(True)
+        ax.legend()
 
         # Passt das Layout an und zeigt das Plot-Fenster an
         plt.tight_layout()

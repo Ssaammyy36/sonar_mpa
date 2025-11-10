@@ -42,8 +42,65 @@ class Datenverarbeitung:
             self.logger.error(f"Fehler beim Dekodieren der NMEA-Daten: {e}")
 
         return tiefen
+    
+    def pars_data_form_echogram(self, text: str) -> list[int]:
+        """
+        Extrahiert den ersten Datenblock, der nach '##DataStart' beginnt.
+        Der Block endet entweder bei '##DataEnd' oder am Ende des Strings.
+        """
+        start_marker = "##DataStart"
+        end_marker = "##DataEnd"
+        
+        # Finde die Startposition nach dem Start-Marker
+        start_index = text.find(start_marker)
+        if start_index == -1:
+            print("Start-Marker wurde nicht gefunden")
+            return []
 
-    def parse_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
+        # Die eigentlichen Daten beginnen nach dem Marker
+        daten_start_index = start_index + len(start_marker)
+
+        # Suche nach dem End-Marker, aber erst *nachdem* der Start-Marker kam
+        end_index = text.find(end_marker, daten_start_index)
+
+        if end_index == -1:
+            # Kein End-Marker gefunden: Nimm alles ab dem Start-Marker bis zum Ende
+            daten_block_text = text[daten_start_index:]
+        else:
+            # End-Marker gefunden: Nimm den Teil dazwischen
+            daten_block_text = text[daten_start_index:end_index]
+            
+        # Bereinige den Block und extrahiere die Zahlen
+        daten_punkte = [int(wert) for wert in daten_block_text.strip().split() if wert.strip().isdigit()]
+        return daten_punkte
+    
+    def plotte_datenpunkte(self, datenpunkte: List[int], titel: str = "Echogramm-Daten"):
+        """Erstellt und zeigt ein Liniendiagramm für eine Liste von Datenpunkten."""
+        
+        if not datenpunkte:
+            self.logger.warning("Keine Datenpunkte zum Plotten vorhanden.")
+            return
+
+        self.logger.info(f"Erstelle Plot für {len(datenpunkte)} Datenpunkte...")
+
+        # Erstellt eine neue Figur (das Fenster) und eine Achse (das Diagramm darin)
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        # Plottet die Datenpunkte auf der Achse
+        ax.plot(datenpunkte)
+
+        # Fügt Titel und Beschriftungen hinzu, um das Diagramm verständlich zu machen
+        ax.set_title(titel)
+        ax.set_xlabel("Datenpunkt-Index")
+        ax.set_ylabel("Intensität (Rohwert)")
+        ax.grid(True)  # Fügt ein Gitter für bessere Lesbarkeit hinzu
+
+        # Passt das Layout an und zeigt das Plot-Fenster an
+        plt.tight_layout()
+        plt.show()
+
+
+    def parse_12_bit_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
         """Parses the raw binary data from the sonar into a dictionary with the meaning of the bytes."""
         message = {}
         if not bin_data:

@@ -88,14 +88,17 @@ class Steuerung:
         
         # Daten Lesen 
         echogram_daten = self.sonar.daten_lesen()
-        
+        echogram_str = echogram_daten.decode("latin_1")
+
         # Verarbeiten
         if echogram_daten:
             # loggen
-            self.logger.debug(f"Darstellung des Echogramms: {echogram_daten.decode("latin_1")}")
+            #self.logger.debug(f"Darstellung des Echogramms: {echogram_str}")
 
             # Parsen
-            # ...
+            measurements = self.datenverarbeitung.pars_data_form_echogram(echogram_str)
+            print(f"Anzahl der Datenpunkte: {len(measurements)}")
+            print(f"Ersten 10 Punkte: {measurements[:10]}...")
         else:
             self.logger.warning("Keine Echogramm vom Sonar empfangen.")
 
@@ -107,14 +110,20 @@ class Steuerung:
         
         # Scannen 
         echogram_daten = self.sonar.daten_lesen()
-        
+        echogram_str = echogram_daten.decode("latin_1")
+
         # Verarbeiten
         if echogram_daten:
             # loggen
-            self.logger.debug(f"Darstellung des Echogramms: {echogram_daten.decode("latin_1")}")
+            #self.logger.debug(f"Darstellung des Echogramms: {echogram_str}")
 
             # Parsen
-            # ...
+            measurements = self.datenverarbeitung.pars_data_form_echogram(echogram_str)
+            print(f"Anzahl der Datenpunkte: {len(measurements)}")
+            print(f"Beispiel-Datenpunkte: {measurements[:10]}...")
+
+            # Dastellen
+            self.datenverarbeitung.plotte_datenpunkte(measurements, titel="Test-Messung vom Sonar")
         else:
             self.logger.warning("Keine Echogramm vom Sonar empfangen.")
 

@@ -20,6 +20,44 @@ class Datenverarbeitung:
         """
         self.logger = get_logger(__name__)
 
+    def verarbeite_daten(self, data_type: str, sensor_daten: Optional[bytes], mode_name: str):
+        """
+        Zentrale Methode zur Verarbeitung von Sensordaten basierend auf dem Datentyp.
+        """
+        if not sensor_daten:
+            self.logger.warning(f"Keine Daten für Modus '{mode_name}' empfangen.")
+            return
+
+        self.logger.info(f"Verarbeite Daten für Modus '{mode_name}' mit Datentyp '{data_type}'...")
+
+        if data_type == "nmea":
+            tiefen = self.parse_nmea_tiefe(sensor_daten)
+            if tiefen:
+                formatierte_tiefen = ", ".join([f"{t:.2f}m" for t in tiefen])
+                self.logger.info(f"{len(tiefen)} Tiefenwerte geparst: [{formatierte_tiefen}]")
+            else:
+                self.logger.info("Keine gültigen Tiefenwerte ($SDDBT) in den NMEA-Daten gefunden.")
+
+        elif data_type in ("echogram", "echogram_plotted"):
+            echogram_str = sensor_daten.decode("latin_1")
+            measurements = self.pars_data_form_echogram(echogram_str)
+            if measurements:
+                self.logger.info(f"{len(measurements)} Ping(s) mit insgesamt {sum(len(p) for p in measurements)} Datenpunkten geparst.")
+                if data_type == "echogram_plotted":
+                    self.plotte_datenpunkte(measurements, titel=f"Echogramm für Modus '{mode_name}'")
+            else:
+                self.logger.warning("Keine gültigen Datenblöcke im Echogramm gefunden.")
+
+        elif data_type == "binary":
+            hex_repr = sensor_daten.hex(' ')
+            self.logger.info(f"Binärdaten empfangen ({len(sensor_daten)} Bytes). Hex-Darstellung: {hex_repr[:90]}...")
+            # Hier könnte die spezifische Binär-Verarbeitung (z.B. parse_12_bit_binary_data) aufgerufen werden.
+            # Aktuell wird nur die Hex-Repräsentation geloggt.
+            self.logger.info("Binär-Verarbeitung ist noch nicht vollständig implementiert.")
+
+        else:
+            self.logger.error(f"Unbekannter Datentyp '{data_type}'. Daten können nicht verarbeitet werden.")
+
     def parse_nmea_tiefe(self, nmea_data: Optional[bytes]) -> List[float]:
         """Parst NMEA-Daten, um Tiefenwerte in Metern aus $SDDBT-Sätzen zu extrahieren."""
         tiefen = []

@@ -1,195 +1,128 @@
+import sys
+from typing import List, Dict, Any
+
 from utils.logger import get_logger
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
-from pathlib import Path
-import sys
+import config
 
 
 class Steuerung:
     """
-    Steuert den gesamten Ablauf der Sonar-Messung und -Verarbeitung.
-    Diese Klasse initialisiert alle notwendigen Komponenten und koordiniert deren Zusammenspiel.
+    Steuert den gesamten Ablauf von Sonar-Messungen.
+    Diese Klasse agiert als flexible Engine, die verschiedene, in der Konfiguration
+    definierte Test-Szenarien ausführen kann.
     """
 
     def __init__(self):
         """Initialisiert die Steuerung und alle Kernkomponenten."""
         self.logger = get_logger(__name__)
-
         self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung()
-
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
-    def starte_anwendung(self, test_modus: str | None = None, frequency: str ="low"):
-        """Hauptmethode, die den Anwendungsablauf steuert."""
+    def fuehre_test_durch(self, mode_id: str, frequency: str):
+        """
+        Führt einen einzelnen, klar definierten Test basierend auf der Konfiguration durch.
 
-        self.logger.info("Sonar-Anwendung wird gestartet.")
-
-        # Checkt TestModus
-        if not test_modus:
-            self.logger.warning("Kein Testmodus angegeben !!! Bitte wähle einen Modus.")
+        Args:
+            mode_id: Die ID des Testmodus (z.B. "3", "4", "100").
+            frequency: Die zu verwendende Frequenz ("low" oder "high").
+        """
+        # 1. Konfiguration laden
+        mode_config = config.MODES.get(mode_id)
+        if not mode_config:
+            self.logger.error(f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
             return
 
-        # Verbinden 
+        mode_name = mode_config["name"]
+        output_mode_id = mode_config["output_mode_id"]
+        data_type = mode_config["data_type"]
+
+        self.logger.info(f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
+
+        # 2. Sonar konfigurieren
+        self.sonar.konfigurieren(output_mode=output_mode_id, frequency=frequency)
+
+        # 3. Daten lesen
+        sensor_daten = self.sonar.daten_lesen(dauer=2.0)
+
+        # 4. Daten verarbeiten
+        self.datenverarbeitung.verarbeite_daten(
+            data_type=data_type,
+            sensor_daten=sensor_daten,
+            mode_name=mode_name
+        )
+        self.logger.info(f"--- Test '{mode_name}' beendet ---")
+
+    def starte_anwendung(self, tests: List[Dict[str, Any]]):
+        """
+        Hauptmethode, die eine Liste von Tests nacheinander ausführt.
+
+        Args:
+            tests: Eine Liste von Dictionaries, wobei jedes Dict einen Test definiert.
+                   Beispiel: [{"mode_id": "4", "frequency": "low"}, {"mode_id": "4", "frequency": "high"}]
+        """
+        self.logger.info(f"Sonar-Anwendung wird gestartet, {len(tests)} Test(s) geplant.")
+
+        if not tests:
+            self.logger.warning("Keine Tests zur Ausführung angegeben.")
+            return
+
         if self.sonar.verbinden():
             self.logger.info("Sonar erfolgreich verbunden.")
 
-            # Ablauf Modi auswäheln 
-            if test_modus.lower() in ('3', 'nmea'):
-                self.fuehre_nmea_test_durch()
-
-            elif test_modus.lower() in ('2', '10bit-Echogram'):
-                self.fuehre_10_bit_echogram_test_durch()
-            elif test_modus.lower() in ('4', '12bit-Echogram'):
-                self.fuehre_12_bit_echogram_test_durch()
+            for test_config in tests:
+                mode_id = test_config.get("mode_id")
+                frequency = test_config.get("frequency", "low") # Default auf "low"
+                if not mode_id:
+                    self.logger.warning(f"Ungültiger Test in der Liste, 'mode_id' fehlt: {test_config}")
+                    continue
                 
-            elif test_modus.lower() in ('100', '12bit-Binary'):
-                self.fuehre_12_bit_binary_test_durch()        
-            elif test_modus.lower() in ('101', '8bit-Binary'):
-                self.fuehre_8_bit_binary_test_durch()
-            else:
-                self.logger.warning(f"Unbekannter Testmodus: '{test_modus}'!!!")
-            
-            # Verbindung Trennen
+                self.fuehre_test_durch(mode_id=mode_id, frequency=frequency)
+
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
         else:
             self.logger.error("Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
 
-        self.logger.info("Sonar-Anwendung beendet.")
+        self.logger.info("Alle geplanten Tests abgeschlossen. Sonar-Anwendung beendet.")
 
-    def fuehre_nmea_test_durch(self, frequency="low"):
-        """Führt einen Test zur Aufnahme und Verarbeitung von NMEA-Daten durch."""
-
-        self.logger.info("Starte NMEA-Daten-Test...")
-        self.sonar.konfigurieren(output_mode="3", frequency=frequency)
-        
-        # Lesen
-        nmea_daten = self.sonar.daten_lesen()
-
-        # Aufbereiten
-        if nmea_daten:
-            tiefen = self.datenverarbeitung.parse_nmea_tiefe(nmea_daten)
-            if tiefen:
-
-                # Ausgeben
-                formatierte_tiefen = ", ".join([f"{t:.2f}m" for t in tiefen])
-                self.logger.info(f"{len(tiefen)} Tiefenwerte erfolgreich geparst: [{formatierte_tiefen}]")
-            else:
-                self.logger.info("NMEA-Daten empfangen, aber keine gültigen Tiefenwerte ($SDDBT) gefunden.")
-        else:
-            self.logger.warning("Keine NMEA-Daten vom Sonar empfangen.")
-
-    def fuehre_10_bit_echogram_test_durch(self, frequency="low"):
-        """Führt einen Test zur Aufnahme und Verarbeitung von String durch."""
-
-        self.logger.info("Starte 10-Bit String-Test...")
-        self.sonar.konfigurieren(output_mode="2", frequency=frequency)
-        
-        # Daten Lesen 
-        echogram_daten = self.sonar.daten_lesen()
-        echogram_str = echogram_daten.decode("latin_1")
-
-        # Verarbeiten
-        if echogram_daten:
-            # loggen
-            #self.logger.debug(f"Darstellung des Echogramms: {echogram_str}")
-
-            # Parsen
-            measurements = self.datenverarbeitung.pars_data_form_echogram(echogram_str)
-            print(f"Anzahl der Datenpunkte: {len(measurements)}")
-            print(f"Ersten 10 Punkte: {measurements[:10]}...")
-        else:
-            self.logger.warning("Keine Echogramm vom Sonar empfangen.")
-
-    def fuehre_12_bit_echogram_test_durch(self, frequency="low"):
-        """Führt einen Test zur Aufnahme und Verarbeitung von String durch."""
-
-        self.logger.info("Starte 12-Bit String-Test...")
-        self.sonar.konfigurieren(output_mode="4", frequency=frequency)
-        
-        # Scannen 
-        echogram_daten = self.sonar.daten_lesen()
-        echogram_str = echogram_daten.decode("latin_1")
-
-        # Verarbeiten
-        if echogram_daten:
-            # loggen
-            #self.logger.debug(f"Darstellung des Echogramms: {echogram_str}")
-
-            # Parsen
-            measurements = self.datenverarbeitung.pars_data_form_echogram(echogram_str)
-
-            if measurements:
-                # Loggen der Ergebnisse
-                self.logger.info(f"{len(measurements)} Ping(s) erfolgreich geparst.")
-                for i, ping in enumerate(measurements):
-                    self.logger.debug(f"  - Ping {i+1}: {len(ping)} Datenpunkte, Beispiel: {ping[:5]}...")
-
-                # Darstellen aller Pings in einem Diagramm
-                self.datenverarbeitung.plotte_datenpunkte(measurements, titel="12-Bit Echogramm Messung")
-            else:
-                self.logger.warning("Echogramm-Daten empfangen, aber keine gültigen Datenblöcke gefunden.")
-        else:
-            self.logger.warning("Keine Echogramm vom Sonar empfangen.")
-
-    def fuehre_8_bit_binary_test_durch(self, frequency="low"):
-        """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
-
-        self.logger.info("Starte 12-Bit Binärdaten-Test...")
-        self.sonar.konfigurieren(output_mode="101", frequency=frequency)
-        
-        # Scannen 
-        binaer_daten = self.sonar.daten_lesen()
-
-        # Verarbeiten
-        if binaer_daten:
-            # Hex loggen
-            hex_repr = binaer_daten.hex(' ')
-            self.logger.debug(f"Hex-Darstellung: {hex_repr}")
-
-            # Parsen
-            # ...
-        else:
-            self.logger.warning("Keine Binärdaten vom Sonar empfangen.")
-
-    def fuehre_12_bit_binary_test_durch(self, frequency="low"):
-        """Führt einen Test zur Aufnahme und Verarbeitung von Binärdaten durch."""
-
-        self.logger.info("Starte 12-Bit Binärdaten-Test...")
-        self.sonar.konfigurieren(output_mode="100", frequency=frequency)
-        
-        # Scannen 
-        binaer_daten = self.sonar.daten_lesen()
-
-        # Verarbeiten
-        if binaer_daten:
-            # Hex loggen
-            hex_repr = binaer_daten.hex(' ')
-            self.logger.debug(f"Hex-Darstellung: {hex_repr}")
-
-            # Parsen
-            # ...
-        else:
-            self.logger.warning("Keine Binärdaten vom Sonar empfangen.")
 
 if __name__ == "__main__":
-    
     """
-    Hauptfunktion: Erstellt das Steuerungsobjekt und startet die Anwendung.
+    Hauptfunktion: Definiert die auszuführenden Tests und startet die Anwendung.
     """
     try:
-        # --- HIER DEN GEWÜNSCHTEN TESTMODUS EINGEBEN ---
-        # 2: für 10-Bit Echogram
-        # 3: für NMEA
-        # 4: für 12-Bit Echogramm
-        # 100: für 12-Bit-Binary
-        # 101: für 8-Bit-Binary
+        # --- HIER DIE GEWÜNSCHTEN TESTS DEFINIEREN ---
 
-        test_modus = "4"
+        # Beispiel 1: Einen einzelnen Test ausführen
+        geplante_tests = [
+            {"mode_id": "4", "frequency": "low"}
+        ]
+
+        # Beispiel 2: Modus 4 mit beiden Frequenzen testen
+        # geplante_tests = [
+        #     {"mode_id": "4", "frequency": "low"},
+        #     {"mode_id": "4", "frequency": "high"}
+        # ]
+
+        # Beispiel 3: Alle Modi mit niedriger Frequenz testen
+        # geplante_tests = [
+        #     {"mode_id": mode, "frequency": "low"} for mode in config.MODES
+        # ]
+        
+        # Beispiel 4: Alle Modi mit ALLEN Frequenzen testen
+        # geplante_tests = [
+        #     {"mode_id": mode, "frequency": freq} 
+        #     for mode in config.MODES 
+        #     for freq in config.FREQUENCIES
+        # ]
 
         steuerung = Steuerung()
-        steuerung.starte_anwendung(test_modus, frequency="low")
+        steuerung.starte_anwendung(geplante_tests)
+
     except Exception as e:
-        print(f"Ein unerwarteter Fehler ist aufgetreten: {e}", file=sys.stderr)
+        # Ein globales Exception-Handling für unerwartete Fehler
+        print(f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

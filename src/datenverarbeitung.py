@@ -156,10 +156,10 @@ class Datenverarbeitung:
     def plotte_datenpunkte(self, daten_bloecke: List[List[int]], titel: str = "Echogramm-Daten"):
         """
         Erstellt und zeigt ein Liniendiagramm für alle Amplituden aus allen Datenblöcken.
-        Die x-Achse zeigt die Entfernung in cm (statt Sample-Index).
-        Die Samplingpunkte haben einen festen Abstand von 7.5 mm = 0.75 cm.
+        Die x-Achse zeigt die Zeit in Millisekunden.
+        Samplingrate ist 100 kHz.
         Die Intensität wird min-max-normalisiert (0 bis 1).
-        Die x-Achse wird alle 25 cm beschriftet.
+        Die x-Achse wird alle 0,5 ms beschriftet.
         """
 
         if not daten_bloecke:
@@ -182,29 +182,30 @@ class Datenverarbeitung:
         alle_amplituden_norm = (alle_amplituden - alle_amplituden.min()) / \
             (alle_amplituden.max() - alle_amplituden.min())
 
-        # x-Achse in cm
-        distance_per_sample_cm = 0.75   # 7.5 mm
-        x_cm = np.arange(num_samples) * distance_per_sample_cm
+        # x-Achse in Millisekunden
+        fs = 100_000  # Samplingrate in Hz
+        t_s = np.arange(num_samples) / fs  # Zeit in Sekunden
+        t_ms = t_s * 1000                  # Zeit in Millisekunden
 
-        # Tick-Abstand alle 25 cm
-        tick_spacing_cm = 25
-        max_cm = x_cm[-1]
-        ticks_cm = np.arange(0, max_cm + tick_spacing_cm, tick_spacing_cm)
+        # Tick-Abstand alle 0,5 ms
+        tick_spacing_ms = 0.5
+        max_ms = t_ms[-1]
+        ticks_ms = np.arange(0, max_ms + tick_spacing_ms, tick_spacing_ms)
 
         # Plot vorbereiten
         fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(x_cm, alle_amplituden_norm, label='Normierte Amplituden')
+        ax.plot(t_ms, alle_amplituden_norm, label='Normierte Amplituden')
 
         # Achsenbeschriftungen
         ax.set_title(titel)
-        ax.set_xlabel("Entfernung [cm]")
+        ax.set_xlabel("Zeit [ms]")
         ax.set_ylabel("Normierte Intensität")
         ax.grid(True)
         ax.legend()
 
         # Ticks setzen
-        ax.set_xticks(ticks_cm)
-        ax.set_xticklabels([f"{int(t)}" for t in ticks_cm])
+        ax.set_xticks(ticks_ms)
+        ax.set_xticklabels([f"{t:.1f}" for t in ticks_ms])
 
         plt.tight_layout()
         plt.show()

@@ -76,8 +76,9 @@ git push origin dev                    # dev hochladen
 Nach erfolgreichem Merge:
 
 ```bash
-git branch -d feature/<name>           # Lokal löschen
-git push origin --delete feature/<name>  # Remote löschen
+git branch -a                               # Alle branches anzeigen
+git branch -d feature/<name>                # Lokal löschen
+git push origin --delete feature/<name>     # Remote löschen
 
 # Zusätze
 git branch -D feature/branchTest      # Löschen Erzwingen 

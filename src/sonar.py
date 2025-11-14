@@ -67,8 +67,8 @@ class Sonar:
 
         # für Mode 4
         self.echosounder.SetValue("IdRange", "3000")
-        self.echosounder.SetValue("IdInterval", "1")
-        self.echosounder.SetValue("IdDeadzone", "200")
+        self.echosounder.SetValue("IdInterval", "0.5")
+        self.echosounder.SetValue("IdDeadzone", "0")
         self.echosounder.SetValue("IdTxLength", "50")
         self.echosounder.SetValue("IdTxPower", "-6")
         self.echosounder.SetValue("IdGain", "-6")
@@ -88,8 +88,9 @@ class Sonar:
         if not self.echosounder.Start():
             self.logger.error("Starten des Echolots fehlgeschlagen.")
             return None
+        
         time.sleep(dauer)
-        data = self.echosounder.ReadData(10000)
+        data = self.echosounder.ReadData(4096) # 2^12 = 4096 ist der Standard
 
         # Checken  
         if data:

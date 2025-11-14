@@ -33,7 +33,7 @@ def get_logger(name: str = __name__) -> logging.Logger:
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         
-        log_file = datetime.now().strftime("%d%m%Y_%H%M") + ".log"
+        log_file = datetime.now().strftime("%d%m%Y_%H%M%S") + ".log"
         file_handler = logging.FileHandler(os.path.join(log_dir, log_file), encoding='utf-8')
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)

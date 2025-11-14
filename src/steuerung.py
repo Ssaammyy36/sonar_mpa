@@ -45,7 +45,8 @@ class Steuerung:
         self.sonar.konfigurieren(output_mode=output_mode_id, frequency=frequency)
 
         # 3. Daten lesen
-        sensor_daten = self.sonar.daten_lesen(dauer=2.0)
+        sensor_daten = self.sonar.daten_lesen(dauer=2)
+        self.logger.debug(f"Nachricht: {sensor_daten.decode("latin_1")}")
 
         # 4. Daten verarbeiten
         self.datenverarbeitung.verarbeite_daten(

@@ -11,6 +11,9 @@ tests/*.pyc
 tests/*.pyo
 tests/*.log
 
+# Log Dateien
+logs/*.log
+
 # Visual Studio Code
 .vscode/
 

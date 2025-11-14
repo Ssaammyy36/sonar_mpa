@@ -52,7 +52,7 @@ class Steuerung:
         )
 
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
-        read_timeout = mode_settings.get("read_timeout", 2.0) if mode_settings else 2.0
+        read_timeout = mode_settings.get("read_timeout", 2.0) if mode_settings else 2.0 #### ?
         sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
         self.logger.debug(f"Nachricht: {sensor_daten.decode("latin_1")}")
 

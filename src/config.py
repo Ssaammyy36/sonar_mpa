@@ -32,18 +32,18 @@ MODES = {
         "settings": {
             "low": {
                 "IdRange": "3000",
-                "IdInterval": "0.5",
-                "IdDeadzone": "0",
+                "IdInterval": "0.1",
+                "IdDeadzone": "200",
                 "IdTxLength": "50",
-                "IdTxPower": "-6",
-                "IdGain": "-6",
-                "read_timeout": 1.0
+                "IdTxPower": "0",
+                "IdGain": "0",
+                "read_timeout": 2.0
             },
             "high": {
                 # Hier könnten bei Bedarf andere Werte für die hohe Frequenz stehen
                 "IdRange": "3000",
                 "IdInterval": "0.5",
-                "IdDeadzone": "0",
+                "IdDeadzone": "200",
                 "IdTxLength": "50",
                 "IdTxPower": "-6",
                 "IdGain": "-6",

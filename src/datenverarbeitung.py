@@ -158,6 +158,7 @@ class Datenverarbeitung:
         Erstellt und zeigt ein Liniendiagramm für alle Amplituden aus allen Datenblöcken.
         Die x-Achse zeigt die Entfernung in cm (statt Sample-Index).
         Die Samplingpunkte haben einen festen Abstand von 7.5 mm = 0.75 cm.
+        Die Intensität wird min-max-normalisiert (0 bis 1).
         Die x-Achse wird alle 25 cm beschriftet.
         """
 
@@ -169,28 +170,35 @@ class Datenverarbeitung:
             f"Erstelle Plot für {len(daten_bloecke)} Datenblock/Blöcke...")
 
         # Alle Amplituden in eine Liste zusammenführen
-        alle_amplituden = [punkt for block in daten_bloecke for punkt in block]
+        alle_amplituden = np.array(
+            [punkt for block in daten_bloecke for punkt in block])
         num_samples = len(alle_amplituden)
 
-        # Abstand pro Sample: 7.5 mm = 0.75 cm
-        distance_per_sample_cm = 0.75
+        if num_samples == 0:
+            self.logger.warning("Keine Amplituden zum Plotten vorhanden.")
+            return
 
-        # x-Achse in cm erstellen
+        # Intensität normieren (Min Max Normierung)
+        alle_amplituden_norm = (alle_amplituden - alle_amplituden.min()) / \
+            (alle_amplituden.max() - alle_amplituden.min())
+
+        # x-Achse in cm
+        distance_per_sample_cm = 0.75   # 7.5 mm
         x_cm = np.arange(num_samples) * distance_per_sample_cm
 
-        # Tick-Abstand: alle 25 cm
+        # Tick-Abstand alle 25 cm
         tick_spacing_cm = 25
         max_cm = x_cm[-1]
         ticks_cm = np.arange(0, max_cm + tick_spacing_cm, tick_spacing_cm)
 
         # Plot vorbereiten
         fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(x_cm, alle_amplituden, label='Alle Amplituden')
+        ax.plot(x_cm, alle_amplituden_norm, label='Normierte Amplituden')
 
         # Achsenbeschriftungen
         ax.set_title(titel)
         ax.set_xlabel("Entfernung [cm]")
-        ax.set_ylabel("Intensität (Rohwert)")
+        ax.set_ylabel("Normierte Intensität")
         ax.grid(True)
         ax.legend()
 

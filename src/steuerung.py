@@ -38,14 +38,22 @@ class Steuerung:
         mode_name = mode_config["name"]
         output_mode_id = mode_config["output_mode_id"]
         data_type = mode_config["data_type"]
+        
+        # Lade die spezifischen Einstellungen für den Modus und die Frequenz
+        mode_settings = mode_config.get("settings", {}).get(frequency)
 
         self.logger.info(f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
 
         # 2. Sonar konfigurieren
-        self.sonar.konfigurieren(output_mode=output_mode_id, frequency=frequency)
+        self.sonar.konfigurieren(
+            output_mode=output_mode_id, 
+            frequency=frequency,
+            settings=mode_settings  # Übergibt die spezifischen Einstellungen
+        )
 
-        # 3. Daten lesen
-        sensor_daten = self.sonar.daten_lesen(dauer=2)
+        # 3. Daten lesen (mit Timeout aus der Konfiguration)
+        read_timeout = mode_settings.get("read_timeout", 2.0) if mode_settings else 2.0
+        sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
         self.logger.debug(f"Nachricht: {sensor_daten.decode("latin_1")}")
 
         # 4. Daten verarbeiten

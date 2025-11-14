@@ -45,7 +45,7 @@ class Sonar:
             # Das Objekt wird vom Garbage Collector entfernt.
             self.echosounder = None
 
-    def konfigurieren(self, output_mode: str, frequency: str):
+    def konfigurieren(self, output_mode: str, frequency: str, settings: Optional[dict] = None):
         """Konfiguriert das Echolot mit den gegebenen Parametern."""
         
         # Check
@@ -65,13 +65,14 @@ class Sonar:
             return
         self.logger.info(f"Konfiguration: {output_mode=}, {frequency=}")
 
-        # für Mode 4
-        self.echosounder.SetValue("IdRange", "3000")
-        self.echosounder.SetValue("IdInterval", "0.5")
-        self.echosounder.SetValue("IdDeadzone", "0")
-        self.echosounder.SetValue("IdTxLength", "50")
-        self.echosounder.SetValue("IdTxPower", "-6")
-        self.echosounder.SetValue("IdGain", "-6")
+        # Wende spezifische Modus-Einstellungen an, falls vorhanden
+        if settings:
+            self.logger.info("Wende spezifische Modus-Einstellungen an:")
+            for key, value in settings.items():
+                # `read_timeout` ist eine reine Software-Einstellung und wird nicht an das Sonar gesendet
+                if key != "read_timeout":
+                    self.echosounder.SetValue(key, str(value))
+                    self.logger.info(f"  -> {key}: {value}")
                                    
 
     def daten_lesen(self, dauer: float = 2.0) -> Optional[bytes]:

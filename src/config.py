@@ -28,7 +28,28 @@ MODES = {
         "name": "12bit-Echogram",
         "output_mode_id": "4",
         "data_type": "echogram_plotted", # Eigener Typ, um Plotting auszulösen
-        "description": "Verarbeitet 12-Bit Echogramm-Daten (ASCII) und stellt sie grafisch dar."
+        "description": "Verarbeitet 12-Bit Echogramm-Daten (ASCII) und stellt sie grafisch dar.",
+        "settings": {
+            "low": {
+                "IdRange": "3000",
+                "IdInterval": "0.5",
+                "IdDeadzone": "0",
+                "IdTxLength": "50",
+                "IdTxPower": "-6",
+                "IdGain": "-6",
+                "read_timeout": 1.0
+            },
+            "high": {
+                # Hier könnten bei Bedarf andere Werte für die hohe Frequenz stehen
+                "IdRange": "3000",
+                "IdInterval": "0.5",
+                "IdDeadzone": "0",
+                "IdTxLength": "50",
+                "IdTxPower": "-6",
+                "IdGain": "-6",
+                "read_timeout": 1.0
+            }
+        }
     },
     "100": {
         "name": "12bit-Binary",

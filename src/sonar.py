@@ -56,14 +56,15 @@ class Sonar:
         # Config
         self.echosounder.SetValue("IdOutput", output_mode)
 
-        if frequency in ("high", "200kHz"):
-            self.echosounder.SendCommand("IdSetHighFreq")
-        elif frequency in ("low", "50kHz"):
-            self.echosounder.SendCommand("IdSetLowFreq")
+        # Wähle die Frequenz basierend auf der Konfiguration
+        freq_config = config.FREQUENCIES.get(frequency)
+        if freq_config and "command" in freq_config:
+            command = freq_config["command"]
+            self.echosounder.SendCommand(command)
+            self.logger.info(f"Konfiguration: {output_mode=}, frequency='{frequency}' (Befehl: {command})")
         else:
-            self.logger.error(f"Unbekannte Frequenz: {frequency}")
+            self.logger.error(f"Frequenz '{frequency}' ist nicht oder nicht vollständig in config.py definiert.")
             return
-        self.logger.info(f"Konfiguration: {output_mode=}, {frequency=}")
 
         # Wende spezifische Modus-Einstellungen an, falls vorhanden
         if settings:

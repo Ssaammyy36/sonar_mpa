@@ -2,10 +2,16 @@
 COMPORT: str = "COM5"
 BAUDRATE: int = 115200
 
-# Definitionen der verfügbaren Frequenzen
+# Definitionen der verfügbaren Frequenzen, inklusive der zugehörigen Hardware-Befehle
 FREQUENCIES = {
-    "low": "50kHz",
-    "high": "200kHz"
+    "low": {
+        "name": "50kHz",
+        "command": "IdSetLowFreq"
+    },
+    "high": {
+        "name": "200kHz",
+        "command": "IdSetHighFreq"
+    }
 }
 
 # Strukturierte Definition aller verfügbaren Sonar-Modi

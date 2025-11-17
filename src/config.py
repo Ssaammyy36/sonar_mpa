@@ -37,23 +37,25 @@ MODES = {
         "description": "Verarbeitet 12-Bit Echogramm-Daten (ASCII) und stellt sie grafisch dar.",
         "settings": {
             "low": {
+                "IdSamplFreq": "100000", # 6250, 12500, 25000, 50000, 100000
                 "IdRange": "3000",
-                "IdInterval": "0.1",
+                "IdInterval": "1",
                 "IdDeadzone": "200",
-                "IdTxLength": "50",
+                "IdTxLength": "10",
                 "IdTxPower": "0",
                 "IdGain": "0",
                 "read_timeout": 2.0
             },
             "high": {
                 # Hier könnten bei Bedarf andere Werte für die hohe Frequenz stehen
+                "IdSamplFreq": "100000", # 6250, 12500, 25000, 50000, 100000
                 "IdRange": "3000",
-                "IdInterval": "0.5",
+                "IdInterval": "1",
                 "IdDeadzone": "200",
-                "IdTxLength": "50",
-                "IdTxPower": "-6",
-                "IdGain": "-6",
-                "read_timeout": 1.0
+                "IdTxLength": "10",
+                "IdTxPower": "0",
+                "IdGain": "0",
+                "read_timeout": 2.0
             }
         }
     },

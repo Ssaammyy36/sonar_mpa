@@ -155,10 +155,10 @@ class Datenverarbeitung:
 
     def plotte_datenpunkte(self, daten_bloecke: List[List[int]], titel: str = "Echogramm-Daten"):
         """
-        Erstellt und zeigt ein Liniendiagramm für alle Amplituden aus allen Datenblöcken.
+        Erstellt und zeigt für jeden Datenblock ein eigenes Liniendiagramm.
         Die x-Achse zeigt die Zeit in Millisekunden.
         Samplingrate ist 100 kHz.
-        Die Intensität wird min-max-normalisiert (0 bis 1).
+        Die Intensität wird pro Block min-max-normalisiert (0 bis 1).
         Die x-Achse wird alle 0,5 ms beschriftet.
         """
 
@@ -166,49 +166,46 @@ class Datenverarbeitung:
             self.logger.warning("Keine Datenpunkte zum Plotten vorhanden.")
             return
 
-        self.logger.info(
-            f"Erstelle Plot für {len(daten_bloecke)} Datenblock/Blöcke...")
+        self.logger.info(f"Erstelle {len(daten_bloecke)} Plot(s) für {len(daten_bloecke)} Datenblock/Blöcke...")
 
-        # Alle Amplituden in eine Liste zusammenführen
-        alle_amplituden = np.array(
-            [punkt for block in daten_bloecke for punkt in block])
-        num_samples = len(alle_amplituden)
+        for i, block in enumerate(daten_bloecke):
+            amplituden = np.array(block)
+            num_samples = len(amplituden)
 
-        if num_samples == 0:
-            self.logger.warning("Keine Amplituden zum Plotten vorhanden.")
-            return
+            if num_samples == 0:
+                self.logger.warning(f"Datenblock {i+1} enthält keine Amplituden zum Plotten.")
+                continue
 
-        # Intensität normieren (Min Max Normierung)
-        alle_amplituden_norm = (alle_amplituden - alle_amplituden.min()) / \
-            (alle_amplituden.max() - alle_amplituden.min())
+            # Intensität normieren (Min-Max-Normierung)
+            amplituden_norm = (amplituden - amplituden.min()) / (amplituden.max() - amplituden.min())
 
-        # x-Achse in Millisekunden
-        fs = 100_000  # Samplingrate in Hz
-        t_s = np.arange(num_samples) / fs  # Zeit in Sekunden
-        t_ms = t_s * 1000                  # Zeit in Millisekunden
+            # x-Achse in Millisekunden
+            fs = 100000  # Samplingrate in Hz
+            t_s = np.arange(num_samples) / fs  # Zeit in Sekunden
+            t_ms = t_s * 1000                  # Zeit in Millisekunden
 
-        # Tick-Abstand alle 0,5 ms
-        tick_spacing_ms = 0.5
-        max_ms = t_ms[-1]
-        ticks_ms = np.arange(0, max_ms + tick_spacing_ms, tick_spacing_ms)
+            # Tick-Abstand alle 0,5 ms
+            tick_spacing_ms = 0.5
+            max_ms = t_ms[-1] if t_ms.size > 0 else 0
+            ticks_ms = np.arange(0, max_ms + tick_spacing_ms, tick_spacing_ms)
 
-        # Plot vorbereiten
-        fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(t_ms, alle_amplituden_norm, label='Normierte Amplituden')
+            # Plot vorbereiten
+            fig, ax = plt.subplots(figsize=(12, 6))
+            ax.plot(t_ms, amplituden_norm, label=f'Normierte Amplituden (Block {i+1})')
 
-        # Achsenbeschriftungen
-        ax.set_title(titel)
-        ax.set_xlabel("Zeit [ms]")
-        ax.set_ylabel("Normierte Intensität")
-        ax.grid(True)
-        ax.legend()
+            # Achsenbeschriftungen
+            ax.set_title(f"{titel} - Block {i+1}")
+            ax.set_xlabel("Zeit [ms]")
+            ax.set_ylabel("Normierte Intensität")
+            ax.grid(True)
+            ax.legend()
 
-        # Ticks setzen
-        ax.set_xticks(ticks_ms)
-        ax.set_xticklabels([f"{t:.1f}" for t in ticks_ms])
+            # Ticks setzen
+            ax.set_xticks(ticks_ms)
+            ax.set_xticklabels([f"{t:.1f}" for t in ticks_ms])
 
-        plt.tight_layout()
-        plt.show()
+            plt.tight_layout()
+            plt.show()
 
     def parse_12_bit_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
         """Parses the raw binary data from the sonar into a dictionary with the meaning of the bytes."""

@@ -108,6 +108,7 @@ if __name__ == "__main__":
         # Beispiel 1: Einen einzelnen Test ausführen
         geplante_tests = [
             {"mode_id": "4", "frequency": "low"}
+            #{"mode_id": "4", "frequency": "high"}
         ]
 
         # Beispiel 2: Modus 4 mit beiden Frequenzen testen

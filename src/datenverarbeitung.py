@@ -3,6 +3,9 @@ from typing import List, Optional
 import matplotlib.pyplot as plt
 import ast
 import numpy as np
+import os
+from datetime import datetime
+
 np.set_printoptions(threshold=np.inf)
 
 
@@ -155,18 +158,17 @@ class Datenverarbeitung:
 
     def plotte_datenpunkte(self, daten_bloecke: List[List[int]], titel: str = "Echogramm-Daten"):
         """
-        Erstellt und zeigt für jeden Datenblock ein eigenes Liniendiagramm.
-        Die x-Achse zeigt die Zeit in Millisekunden.
-        Samplingrate ist 100 kHz.
-        Die Intensität wird pro Block min-max-normalisiert (0 bis 1).
-        Die x-Achse wird alle 0,5 ms beschriftet.
+        Erstellt für jeden Datenblock ein Liniendiagramm und speichert es als PNG-Datei im 'logs'-Ordner.
+        Die Diagramme werden nicht mehr interaktiv angezeigt.
         """
-
         if not daten_bloecke:
             self.logger.warning("Keine Datenpunkte zum Plotten vorhanden.")
             return
 
-        self.logger.info(f"Erstelle {len(daten_bloecke)} Plot(s) für {len(daten_bloecke)} Datenblock/Blöcke...")
+        log_dir = "logs"
+        os.makedirs(log_dir, exist_ok=True)
+
+        self.logger.info(f"Erstelle und speichere {len(daten_bloecke)} Plot(s) im Ordner '{log_dir}'...")
 
         for i, block in enumerate(daten_bloecke):
             amplituden = np.array(block)
@@ -205,7 +207,20 @@ class Datenverarbeitung:
             ax.set_xticklabels([f"{t:.1f}" for t in ticks_ms])
 
             plt.tight_layout()
-            plt.show()
+
+            # Dateinamen mit Zeitstempel generieren und Plot speichern
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"echogram_{timestamp}_block_{i+1}.png"
+            save_path = os.path.join(log_dir, filename)
+            
+            try:
+                plt.savefig(save_path)
+                self.logger.info(f"Plot für Block {i+1} erfolgreich gespeichert: {save_path}")
+            except Exception as e:
+                self.logger.error(f"Fehler beim Speichern des Plots für Block {i+1}: {e}")
+            finally:
+                # Figur schließen, um Speicher freizugeben
+                plt.close(fig)
 
     def parse_12_bit_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
         """Parses the raw binary data from the sonar into a dictionary with the meaning of the bytes."""

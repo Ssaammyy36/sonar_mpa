@@ -1,7 +1,9 @@
 import sys
+import os
+from datetime import datetime
 from typing import List, Dict, Any
 
-from utils.logger import get_logger
+from utils.logger import get_logger, setup_logging
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
 import config
@@ -14,11 +16,17 @@ class Steuerung:
     definierte Test-Szenarien ausführen kann.
     """
 
-    def __init__(self):
-        """Initialisiert die Steuerung und alle Kernkomponenten."""
+    def __init__(self, run_dir: str):
+        """
+        Initialisiert die Steuerung und alle Kernkomponenten.
+
+        Args:
+            run_dir (str): Das Verzeichnis für diesen Programmlauf, in dem Logs und Plots gespeichert werden.
+        """
+        self.run_dir = run_dir
         self.logger = get_logger(__name__)
         self.sonar = Sonar()
-        self.datenverarbeitung = Datenverarbeitung()
+        self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
     def fuehre_test_durch(self, mode_id: str, frequency: str):
@@ -54,7 +62,7 @@ class Steuerung:
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
         read_timeout = mode_settings.get("read_timeout", 2.0) if mode_settings else 2.0 
         sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
-        self.logger.debug(f"Nachricht: {sensor_daten.decode("latin_1")}")
+        self.logger.debug(f"Nachricht: {sensor_daten.decode('latin_1')}")
 
         # 4. Daten verarbeiten
         self.datenverarbeitung.verarbeite_daten(
@@ -104,35 +112,23 @@ if __name__ == "__main__":
     """
     try:
         # --- HIER DIE GEWÜNSCHTEN TESTS DEFINIEREN ---
-
-        # Beispiel 1: Einen einzelnen Test ausführen
         geplante_tests = [
             {"mode_id": "4", "frequency": "low"}
-            #{"mode_id": "4", "frequency": "high"}
         ]
 
-        # Beispiel 2: Modus 4 mit beiden Frequenzen testen
-        # geplante_tests = [
-        #     {"mode_id": "4", "frequency": "low"},
-        #     {"mode_id": "4", "frequency": "high"}
-        # ]
+        # Erstelle ein einzigartiges Verzeichnis für diesen Programmlauf
+        run_dir = os.path.join('logs', datetime.now().strftime('%Y%m%d_%H%M%S'))
+        os.makedirs(run_dir, exist_ok=True)
 
-        # Beispiel 3: Alle Modi mit niedriger Frequenz testen
-        # geplante_tests = [
-        #     {"mode_id": mode, "frequency": "low"} for mode in config.MODES
-        # ]
-        
-        # Beispiel 4: Alle Modi mit ALLEN Frequenzen testen
-        # geplante_tests = [
-        #     {"mode_id": mode, "frequency": freq} 
-        #     for mode in config.MODES 
-        #     for freq in config.FREQUENCIES
-        # ]
+        # Konfiguriere das Logging, um in das neue Verzeichnis zu schreiben
+        setup_logging(run_dir)
 
-        steuerung = Steuerung()
+        # Starte die Hauptanwendung und übergebe das Laufzeit-Verzeichnis
+        steuerung = Steuerung(run_dir=run_dir)
         steuerung.starte_anwendung(geplante_tests)
 
     except Exception as e:
         # Ein globales Exception-Handling für unerwartete Fehler
+        # Logging ist hier möglicherweise noch nicht konfiguriert, daher print
         print(f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

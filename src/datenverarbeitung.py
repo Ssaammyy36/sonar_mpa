@@ -15,13 +15,18 @@ class Datenverarbeitung:
 
     Attributes:
         logger: Das Logging-Objekt für diese Klasse.
+        run_dir: Das Verzeichnis für den aktuellen Programmlauf.
     """
 
-    def __init__(self):
+    def __init__(self, run_dir: str):
         """
         Initialisiert ein neues Datenverarbeitungs-Objekt.
+
+        Args:
+            run_dir (str): Das Verzeichnis für diesen Programmlauf, in dem Logs und Plots gespeichert werden.
         """
         self.logger = get_logger(__name__)
+        self.run_dir = run_dir
 
     def verarbeite_daten(self, data_type: str, sensor_daten: Optional[bytes], mode_name: str):
         """
@@ -158,17 +163,14 @@ class Datenverarbeitung:
 
     def plotte_datenpunkte(self, daten_bloecke: List[List[int]], titel: str = "Echogramm-Daten"):
         """
-        Erstellt für jeden Datenblock ein Liniendiagramm und speichert es als PNG-Datei im 'logs'-Ordner.
-        Die Diagramme werden nicht mehr interaktiv angezeigt.
+        Erstellt für jeden Datenblock ein Liniendiagramm und speichert es als PNG-Datei 
+        im Verzeichnis des aktuellen Programmlaufs.
         """
         if not daten_bloecke:
             self.logger.warning("Keine Datenpunkte zum Plotten vorhanden.")
             return
 
-        log_dir = "logs"
-        os.makedirs(log_dir, exist_ok=True)
-
-        self.logger.info(f"Erstelle und speichere {len(daten_bloecke)} Plot(s) im Ordner '{log_dir}'...")
+        self.logger.info(f"Erstelle und speichere {len(daten_bloecke)} Plot(s) im Ordner '{self.run_dir}'...")
 
         for i, block in enumerate(daten_bloecke):
             amplituden = np.array(block)
@@ -211,7 +213,7 @@ class Datenverarbeitung:
             # Dateinamen mit Zeitstempel generieren und Plot speichern
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"echogram_{timestamp}_block_{i+1}.png"
-            save_path = os.path.join(log_dir, filename)
+            save_path = os.path.join(self.run_dir, filename)
             
             try:
                 plt.savefig(save_path)

@@ -2,40 +2,54 @@ import logging
 import os
 from datetime import datetime
 
-def get_logger(name: str = __name__) -> logging.Logger:
+# Globale Variable, um zu prüfen, ob das Logging bereits konfiguriert wurde
+_logging_configured = False
+
+def setup_logging(log_dir: str):
     """
-    Konfiguriert und gibt einen Logger mit UTF-8-Kodierung zurück.
-
-    Args:
-        name (str, optional): Der Name des Loggers. Defaults to __name__.
-
-    Returns:
-        logging.Logger: Das konfigurierte Logger-Objekt.
+    Konfiguriert das Root-Logging-System, um in eine Datei und die Konsole zu schreiben.
+    Diese Funktion sollte nur einmal beim Start der Anwendung aufgerufen werden.
     """
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+    global _logging_configured
+    if _logging_configured:
+        return
 
-    # Handler nur hinzufügen, wenn noch keine konfiguriert sind
-    if not logger.handlers:
-        # Formatter definieren
-        formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)-8s - %(name)-15s:%(funcName)-28s - %(message)s',
-            datefmt='%H:%M:%S' # Nur Stunde, Minute, Sekunde
-        )
-        
-        # StreamHandler erstellen und Kodierung auf UTF-8 setzen
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(formatter)
-        logger.addHandler(stream_handler)
+    # Sicherstellen, dass das Log-Verzeichnis existiert
+    os.makedirs(log_dir, exist_ok=True)
+    file_name = "sonar_loggs_" + datetime.now().strftime("%d%m%Y_%H%M%S") + ".log"
+    log_file_path = os.path.join(log_dir, file_name)
 
-        # FileHandler erstellen
-        log_dir = "logs"
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-        
-        log_file = datetime.now().strftime("%d%m%Y_%H%M%S") + ".log"
-        file_handler = logging.FileHandler(os.path.join(log_dir, log_file), encoding='utf-8')
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+    # Formatter definieren
+    formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)-8s - %(name)-15s:%(funcName)-28s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
 
-    return logger
+    # Root-Logger konfigurieren
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    
+    # Alle bestehenden Handler entfernen, um Duplikate zu vermeiden
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # StreamHandler für die Konsole
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    root_logger.addHandler(stream_handler)
+
+    # FileHandler für die Datei
+    file_handler = logging.FileHandler(log_file_path, encoding='utf-8')
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+
+    _logging_configured = True
+    logging.info(f"Logging konfiguriert. Log-Datei unter: {log_file_path}")
+
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Gibt einen Logger mit dem angegebenen Namen zurück.
+    Die Konfiguration wird durch setup_logging() übernommen.
+    """
+    return logging.getLogger(name)

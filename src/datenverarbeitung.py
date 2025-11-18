@@ -5,6 +5,7 @@ import ast
 import numpy as np
 import os
 from datetime import datetime
+from typing import Tuple, List, Optional
 
 np.set_printoptions(threshold=np.inf)
 
@@ -173,32 +174,33 @@ class Datenverarbeitung:
         self.logger.info(
             f"Erstelle und speichere {len(daten_bloecke)} Plot(s) im Ordner '{self.run_dir}'...")
 
-        for i, block in enumerate(daten_bloecke):
-            amplituden = np.array(block)
-            num_samples = len(amplituden)
+        # Fallback für Settings, falls None
+        current_settings = settings if settings else {}
 
-            if num_samples == 0:
+        for i, block in enumerate(daten_bloecke):
+            # METADATEN & NORMIERUNG EXTERN BERECHNEN
+            t_s, d_m, amps_norm = self.berechne_metadaten(
+                block, current_settings)
+
+            # Leere Blöcke abfangen (Analog zum ursprünglichen Code)
+            if len(amps_norm) == 0:
                 self.logger.warning(
                     f"Datenblock {i+1} enthält keine Amplituden zum Plotten.")
                 continue
 
-            # Intensität normieren (Min-Max-Normierung)
-            amplituden_norm = (amplituden - amplituden.min()) / \
-                (amplituden.max() - amplituden.min())
+            # Zeit in Millisekunden für den Plot (wie im Original)
+            t_ms = t_s * 1000
 
-            # x-Achse in Millisekunden
-            fs = settings.get("freqIdSamplFreq", {})  # Samplingrate in Hz
-            t_s = np.arange(num_samples) / fs  # Zeit in Sekunden
-            t_ms = t_s * 1000                  # Zeit in Millisekunden
-
-            # Tick-Abstand alle 0,5 ms
+            # Ticks Logik aus Original Code wiederhergestellt (optional, aber gut für Konsistenz)
             tick_spacing_ms = 0.5
             max_ms = t_ms[-1] if t_ms.size > 0 else 0
             ticks_ms = np.arange(0, max_ms + tick_spacing_ms, tick_spacing_ms)
 
-            # Plot vorbereiten
+            # --- PLOT VORBEREITEN ---
             fig, ax = plt.subplots(figsize=(12, 6))
-            ax.plot(t_ms, amplituden_norm,
+
+            # Plotten der bereits normierten Daten
+            ax.plot(t_ms, amps_norm,
                     label=f'Normierte Amplituden (Block {i+1})')
 
             # Achsenbeschriftungen
@@ -208,13 +210,18 @@ class Datenverarbeitung:
             ax.grid(True)
             ax.legend()
 
-            # Ticks setzen
+            # Ticks setzen (wie im Original)
             ax.set_xticks(ticks_ms)
             ax.set_xticklabels([f"{t:.1f}" for t in ticks_ms])
 
+            # Sekundäre x-Achse für Entfernung (Meter) hinzufügen
+            ax2 = ax.twiny()
+            ax2.set_xlim(d_m.min(), d_m.max())
+            ax2.set_xlabel("Entfernung [m] (v=1500m/s)")
+
             plt.tight_layout()
 
-            # Dateinamen mit Zeitstempel generieren und Plot speichern
+            # SPEICHERUNG
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"echogram_{timestamp}_block_{i+1}.png"
             save_path = os.path.join(self.run_dir, filename)
@@ -259,3 +266,53 @@ class Datenverarbeitung:
             self.logger.error(f"Fehler beim Parsen der Binärdaten: {e}")
 
         return message
+
+    def berechne_metadaten(self, amplituden_block: List[int], settings: Optional[dict] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Berechnet Zeit- und Distanzachsen basierend auf den Settings.
+
+        Args:
+            amplituden_block: Liste der gemessenen Intensitäten.
+            settings: Das Dictionary mit den Parametern (z.B. 'IdSamplFreq').
+
+        Returns:
+            t_s (np.array): Zeitachse in Sekunden
+            d_m (np.array): Distanzachse in Metern
+            amps (np.array): Die Intensitäten als Numpy-Array
+        """
+        # 1. Daten in Numpy-Array wandeln
+        raw_amps = np.array(amplituden_block)
+        num_samples = len(raw_amps)
+
+        if num_samples == 0:
+            return np.array([]), np.array([]), np.array([])
+
+        # 2. Sampling-Rate aus Settings holen (String -> Float Konvertierung!)
+        # Default auf 100kHz, falls Schlüsselfehler oder leer
+        try:
+            fs_val = settings.get("freqIdSamplFreq", {})
+            fs = float(fs_val) if fs_val else 100000.0
+        except (ValueError, TypeError):
+            self.logger.warning(
+                "Konnte IdSamplFreq nicht lesen, nutze Default 100kHz")
+            fs = 100000.0
+
+        # 3. Zeitachse berechnen (Sekunden)
+        time_axis_s = np.arange(num_samples) / fs
+
+        # 4. Distanzachse berechnen (Meter, Hin-und-Zurück / 2)
+        sound_speed = 1500.0  # m/s
+        dist_axis_m = (time_axis_s * sound_speed) / 2
+
+        # 5. Normierung (Min-Max)
+        # Verhindert Division durch Null, falls alle Werte gleich sind (z.B. Sensor sieht schwarz)
+        min_val = raw_amps.min()
+        max_val = raw_amps.max()
+
+        if max_val > min_val:
+            amps_norm = (raw_amps - min_val) / (max_val - min_val)
+        else:
+            # Oder raw_amps / max_val, je nach Wunsch
+            amps_norm = np.zeros_like(raw_amps, dtype=float)
+
+        return time_axis_s, dist_axis_m, amps_norm

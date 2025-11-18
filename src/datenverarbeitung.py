@@ -28,7 +28,7 @@ class Datenverarbeitung:
         self.logger = get_logger(__name__)
         self.run_dir = run_dir
 
-    def verarbeite_daten(self, data_type: str, sensor_daten: Optional[bytes], mode_name: str):
+    def verarbeite_daten(self, data_type: str, sensor_daten: Optional[bytes], mode_name: str, settings: Optional[dict] = None):
         """
         Zentrale Methode zur Verarbeitung von Sensordaten basierend auf dem Datentyp.
         """
@@ -58,7 +58,7 @@ class Datenverarbeitung:
                     f"{len(measurements)} Ping(s) mit insgesamt {sum(len(p) for p in measurements)} Datenpunkten geparst.")
                 if data_type == "echogram_plotted":
                     self.plotte_datenpunkte(
-                        measurements, titel=f"Echogramm für Modus '{mode_name}'")
+                        measurements, titel=f"Echogramm für Modus '{mode_name}'", settings=settings)
             else:
                 self.logger.warning(
                     "Keine gültigen Datenblöcke im Echogramm gefunden.")
@@ -161,7 +161,7 @@ class Datenverarbeitung:
 
         return alle_daten_bloecke
 
-    def plotte_datenpunkte(self, daten_bloecke: List[List[int]], titel: str = "Echogramm-Daten"):
+    def plotte_datenpunkte(self, daten_bloecke: List[List[int]], titel: str = "Echogramm-Daten", settings: Optional[dict] = None):
         """
         Erstellt für jeden Datenblock ein Liniendiagramm und speichert es als PNG-Datei 
         im Verzeichnis des aktuellen Programmlaufs.
@@ -170,21 +170,24 @@ class Datenverarbeitung:
             self.logger.warning("Keine Datenpunkte zum Plotten vorhanden.")
             return
 
-        self.logger.info(f"Erstelle und speichere {len(daten_bloecke)} Plot(s) im Ordner '{self.run_dir}'...")
+        self.logger.info(
+            f"Erstelle und speichere {len(daten_bloecke)} Plot(s) im Ordner '{self.run_dir}'...")
 
         for i, block in enumerate(daten_bloecke):
             amplituden = np.array(block)
             num_samples = len(amplituden)
 
             if num_samples == 0:
-                self.logger.warning(f"Datenblock {i+1} enthält keine Amplituden zum Plotten.")
+                self.logger.warning(
+                    f"Datenblock {i+1} enthält keine Amplituden zum Plotten.")
                 continue
 
             # Intensität normieren (Min-Max-Normierung)
-            amplituden_norm = (amplituden - amplituden.min()) / (amplituden.max() - amplituden.min())
+            amplituden_norm = (amplituden - amplituden.min()) / \
+                (amplituden.max() - amplituden.min())
 
             # x-Achse in Millisekunden
-            fs = 100000  # Samplingrate in Hz
+            fs = settings.get("freqIdSamplFreq", {})  # Samplingrate in Hz
             t_s = np.arange(num_samples) / fs  # Zeit in Sekunden
             t_ms = t_s * 1000                  # Zeit in Millisekunden
 
@@ -195,7 +198,8 @@ class Datenverarbeitung:
 
             # Plot vorbereiten
             fig, ax = plt.subplots(figsize=(12, 6))
-            ax.plot(t_ms, amplituden_norm, label=f'Normierte Amplituden (Block {i+1})')
+            ax.plot(t_ms, amplituden_norm,
+                    label=f'Normierte Amplituden (Block {i+1})')
 
             # Achsenbeschriftungen
             ax.set_title(f"{titel} - Block {i+1}")
@@ -214,12 +218,14 @@ class Datenverarbeitung:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"echogram_{timestamp}_block_{i+1}.png"
             save_path = os.path.join(self.run_dir, filename)
-            
+
             try:
                 plt.savefig(save_path)
-                self.logger.info(f"Plot für Block {i+1} erfolgreich gespeichert: {save_path}")
+                self.logger.info(
+                    f"Plot für Block {i+1} erfolgreich gespeichert: {save_path}")
             except Exception as e:
-                self.logger.error(f"Fehler beim Speichern des Plots für Block {i+1}: {e}")
+                self.logger.error(
+                    f"Fehler beim Speichern des Plots für Block {i+1}: {e}")
             finally:
                 # Figur schließen, um Speicher freizugeben
                 plt.close(fig)

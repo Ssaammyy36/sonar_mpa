@@ -38,29 +38,32 @@ class Steuerung:
             frequency: Die zu verwendende Frequenz ("low" oder "high").
         """
         # 1. Konfiguration laden
-        mode_config = config.MODES.get(mode_id) # 2,3,4,100,101
+        mode_config = config.MODES.get(mode_id)  # 2,3,4,100,101
         if not mode_config:
-            self.logger.error(f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
+            self.logger.error(
+                f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
             return
 
         mode_name = mode_config["name"]
         output_mode_id = mode_config["output_mode_id"]
         data_type = mode_config["data_type"]
-        
+
         # Lade die spezifischen Einstellungen für den Modus und die angegebene Frequenz
         mode_settings = mode_config.get("settings", {}).get(frequency)
 
-        self.logger.info(f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
+        self.logger.info(
+            f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
 
         # 2. Sonar konfigurieren
         self.sonar.konfigurieren(
-            output_mode=output_mode_id, 
+            output_mode=output_mode_id,
             frequency=frequency,
             settings=mode_settings  # Übergibt die spezifischen Einstellungen
         )
 
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
-        read_timeout = mode_settings.get("read_timeout", 2.0) if mode_settings else 2.0 
+        read_timeout = mode_settings.get(
+            "read_timeout", 2.0) if mode_settings else 2.0
         sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
         self.logger.debug(f"Nachricht: {sensor_daten.decode('latin_1')}")
 
@@ -68,8 +71,8 @@ class Steuerung:
         self.datenverarbeitung.verarbeite_daten(
             data_type=data_type,
             sensor_daten=sensor_daten,
-            mode_name=mode_name
-            mode_settings=mode_settings
+            mode_name=mode_name,
+            settings=mode_settings
         )
         self.logger.info(f"--- Test '{mode_name}' beendet ---")
 
@@ -81,7 +84,8 @@ class Steuerung:
             tests: Eine Liste von Dictionaries, wobei jedes Dict einen Test definiert.
                    Beispiel: [{"mode_id": "4", "frequency": "low"}, {"mode_id": "4", "frequency": "high"}]
         """
-        self.logger.info(f"Sonar-Anwendung wird gestartet, {len(tests)} Test(s) geplant.")
+        self.logger.info(
+            f"Sonar-Anwendung wird gestartet, {len(tests)} Test(s) geplant.")
 
         if not tests:
             self.logger.warning("Keine Tests zur Ausführung angegeben.")
@@ -92,19 +96,23 @@ class Steuerung:
 
             for test_config in tests:
                 mode_id = test_config.get("mode_id")
-                frequency = test_config.get("frequency", "low") # Default auf "low"
+                frequency = test_config.get(
+                    "frequency", "low")  # Default auf "low"
                 if not mode_id:
-                    self.logger.warning(f"Ungültiger Test in der Liste, 'mode_id' fehlt: {test_config}")
+                    self.logger.warning(
+                        f"Ungültiger Test in der Liste, 'mode_id' fehlt: {test_config}")
                     continue
-                
+
                 self.fuehre_test_durch(mode_id=mode_id, frequency=frequency)
 
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
         else:
-            self.logger.error("Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
+            self.logger.error(
+                "Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
 
-        self.logger.info("Alle geplanten Tests abgeschlossen. Sonar-Anwendung beendet.")
+        self.logger.info(
+            "Alle geplanten Tests abgeschlossen. Sonar-Anwendung beendet.")
 
 
 if __name__ == "__main__":
@@ -118,7 +126,8 @@ if __name__ == "__main__":
         ]
 
         # Erstelle ein einzigartiges Verzeichnis für diesen Programmlauf
-        run_dir = os.path.join('logs', datetime.now().strftime('%Y%m%d_%H%M%S'))
+        run_dir = os.path.join(
+            'logs', datetime.now().strftime('%Y%m%d_%H%M%S'))
         os.makedirs(run_dir, exist_ok=True)
 
         # Konfiguriere das Logging, um in das neue Verzeichnis zu schreiben
@@ -131,5 +140,6 @@ if __name__ == "__main__":
     except Exception as e:
         # Ein globales Exception-Handling für unerwartete Fehler
         # Logging ist hier möglicherweise noch nicht konfiguriert, daher print
-        print(f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
+        print(
+            f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

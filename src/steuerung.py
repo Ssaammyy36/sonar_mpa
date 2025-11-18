@@ -38,7 +38,7 @@ class Steuerung:
             frequency: Die zu verwendende Frequenz ("low" oder "high").
         """
         # 1. Konfiguration laden
-        mode_config = config.MODES.get(mode_id)
+        mode_config = config.MODES.get(mode_id) # 2,3,4,100,101
         if not mode_config:
             self.logger.error(f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
             return
@@ -69,6 +69,7 @@ class Steuerung:
             data_type=data_type,
             sensor_daten=sensor_daten,
             mode_name=mode_name
+            mode_settings=mode_settings
         )
         self.logger.info(f"--- Test '{mode_name}' beendet ---")
 

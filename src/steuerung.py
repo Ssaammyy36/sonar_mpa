@@ -1,9 +1,6 @@
-import sys
-import os
-from datetime import datetime
 from typing import List, Dict, Any
 
-from utils.logger import get_logger, setup_logging
+from utils.logger import get_logger
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
 import config

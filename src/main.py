@@ -28,8 +28,5 @@ if __name__ == "__main__":
         steuerung.starte_anwendung(geplante_tests)
 
     except Exception as e:
-        # Ein globales Exception-Handling für unerwartete Fehler
-        # Logging ist hier möglicherweise noch nicht konfiguriert, daher print
-        print(
-            f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
+        print(f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

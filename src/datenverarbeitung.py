@@ -208,7 +208,7 @@ class Datenverarbeitung:
             ax.set_xlabel("Zeit [ms]")
             ax.set_ylabel("Normierte Intensität")
             ax.grid(True)
-            ax.legend()
+            # ax.legend()
 
             # Ticks setzen (wie im Original)
             ax.set_xticks(ticks_ms)

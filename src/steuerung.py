@@ -72,7 +72,7 @@ class Steuerung:
             data_type=data_type,
             sensor_daten=sensor_daten,
             mode_name=mode_name,
-            settings=mode_settings
+            settings=mode_settings,
         )
         self.logger.info(f"--- Test '{mode_name}' beendet ---")
 

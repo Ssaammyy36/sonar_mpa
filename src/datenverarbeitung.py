@@ -214,10 +214,17 @@ class Datenverarbeitung:
             ax.set_xticks(ticks_ms)
             ax.set_xticklabels([f"{t:.1f}" for t in ticks_ms])
 
-            # Sekundäre x-Achse für Entfernung (Meter) hinzufügen
-            ax2 = ax.twiny()
-            ax2.set_xlim(d_m.min(), d_m.max())
-            ax2.set_xlabel("Entfernung [m] (v=1500m/s)")
+            # Korrekte Synchronisierung der Achsen
+            # Wir definieren Umrechnungsfunktionen für secondary_xaxis.
+            # Damit weiß Matplotlib genau, welcher ms-Wert welchem Meter-Wert entspricht.
+            def ms_to_m(val_ms):
+                return (val_ms / 1000.0) * 1500.0 / 2.0
+
+            def m_to_ms(val_m):
+                return (val_m * 2.0 / 1500.0) * 1000.0
+
+            secax = ax.secondary_xaxis('top', functions=(ms_to_m, m_to_ms))
+            secax.set_xlabel("Entfernung [m] (v=1500m/s)")
 
             plt.tight_layout()
 

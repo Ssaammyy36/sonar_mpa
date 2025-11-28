@@ -24,3 +24,6 @@ logs/*
 # Configs und Main 
 src/config.py
 src/main.py
+
+# Data 
+data/*

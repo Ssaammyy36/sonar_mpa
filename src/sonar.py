@@ -1,7 +1,7 @@
 import time
 from typing import Optional
 
-from utils.logger import get_logger
+from src.logger import get_logger
 from echosounderapi.echosndr import DualEchosounder
 import config
 
@@ -47,10 +47,11 @@ class Sonar:
 
     def konfigurieren(self, output_mode: str, frequency: str, settings: Optional[dict] = None):
         """Konfiguriert das Echolot mit den gegebenen Parametern."""
-        
+
         # Check
         if not self.echosounder:
-            self.logger.warning("Sonar nicht verbunden. Konfiguration nicht möglich.")
+            self.logger.warning(
+                "Sonar nicht verbunden. Konfiguration nicht möglich.")
             return
 
         # Config
@@ -61,9 +62,11 @@ class Sonar:
         if freq_config and "command" in freq_config:
             command = freq_config["command"]
             self.echosounder.SendCommand(command)
-            self.logger.info(f"Konfiguration: {output_mode=}, frequency='{frequency}' (Befehl: {command})")
+            self.logger.info(
+                f"Konfiguration: {output_mode=}, frequency='{frequency}' (Befehl: {command})")
         else:
-            self.logger.error(f"Frequenz '{frequency}' ist nicht oder nicht vollständig in config.py definiert.")
+            self.logger.error(
+                f"Frequenz '{frequency}' ist nicht oder nicht vollständig in config.py definiert.")
             return
 
         # Wende spezifische Modus-Einstellungen an, falls vorhanden
@@ -74,31 +77,30 @@ class Sonar:
                 if key != "read_timeout":
                     self.echosounder.SetValue(key, str(value))
                     self.logger.info(f"  -> {key}: {value}")
-                                   
 
     def daten_lesen(self, dauer: float = 2.0) -> Optional[bytes]:
         """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit hex"""
-        
+
         # Check for Sonar Objekt
         if not self.echosounder:
             self.logger.warning(
                 "Sonar nicht verbunden. Datenlesen nicht möglich.")
             return None
 
-        # Scannen 
+        # Scannen
         self.logger.info(f"Starte Ping für {dauer} Sekunden...")
         if not self.echosounder.Start():
             self.logger.error("Starten des Echolots fehlgeschlagen.")
             return None
-        
-        time.sleep(dauer)
-        data = self.echosounder.ReadData(4096) # 2^12 = 4096 ist der Standard
 
-        # Checken  
+        time.sleep(dauer)
+        data = self.echosounder.ReadData(4096)  # 2^12 = 4096 ist der Standard
+
+        # Checken
         if data:
             self.logger.debug(f"Daten empfangen mit der Länge {len(data)}")
         else:
             self.logger.debug("Keine Daten vom Sonar empfangen.")
 
-        self.echosounder.Stop()  
+        self.echosounder.Stop()
         return data

@@ -1,10 +1,6 @@
 from typing import List, Dict, Any
 
-<<<<<<< HEAD
-from utils.logger import get_logger
-=======
 from src.logger import get_logger, setup_logging
->>>>>>> feature/logger_rausziehen
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
 import config

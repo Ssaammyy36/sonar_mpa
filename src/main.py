@@ -1,8 +1,9 @@
-import os, sys 
+import os
+import sys
 from datetime import datetime
 
 from steuerung import Steuerung
-from utils.logger import get_logger, setup_logging
+from src.logger import get_logger, setup_logging
 
 
 if __name__ == "__main__":
@@ -28,5 +29,6 @@ if __name__ == "__main__":
         steuerung.starte_anwendung(geplante_tests)
 
     except Exception as e:
-        print(f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
+        print(
+            f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

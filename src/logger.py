@@ -5,6 +5,7 @@ from datetime import datetime
 # Globale Variable, um zu prüfen, ob das Logging bereits konfiguriert wurde
 _logging_configured = False
 
+
 def setup_logging(log_dir: str):
     """
     Konfiguriert das Root-Logging-System, um in eine Datei und die Konsole zu schreiben.
@@ -28,7 +29,7 @@ def setup_logging(log_dir: str):
     # Root-Logger konfigurieren
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
-    
+
     # Alle bestehenden Handler entfernen, um Duplikate zu vermeiden
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)

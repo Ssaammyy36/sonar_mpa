@@ -1,9 +1,8 @@
-import os
 import sys
 from datetime import datetime
-
+from pathlib import Path
 from steuerung import Steuerung
-from logger import get_logger, setup_logging
+from logger import setup_logging
 
 
 if __name__ == "__main__":
@@ -16,17 +15,17 @@ if __name__ == "__main__":
             {"mode_id": "4", "frequency": "low"}
         ]
 
-        # Erstelle ein einzigartiges Verzeichnis für diesen Programmlauf
-        run_dir = os.path.join(
-            'logs', datetime.now().strftime('%Y%m%d_%H%M%S'))
-        os.makedirs(run_dir, exist_ok=True)
+        # 1. Log-Verzeichnis
+        run_dir = Path('logs') / datetime.now().strftime('%Y%m%d_%H%M%S')
+        run_dir.mkdir(parents=True, exist_ok=True)
 
         # Konfiguriere das Logging, um in das neue Verzeichnis zu schreiben
         setup_logging(run_dir)
 
         # Starte die Hauptanwendung und übergebe das Laufzeit-Verzeichnis
-        steuerung = Steuerung(run_dir=run_dir)
-        steuerung.starte_anwendung(geplante_tests)
+        steuerung = Steuerung(
+            run_dir=run_dir, tests=geplante_tests)
+        steuerung.starte_anwendung()
 
     except Exception as e:
         print(

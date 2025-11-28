@@ -304,7 +304,7 @@ class Datenverarbeitung:
 
         try:
             with open(filepath, 'a', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
+                writer = csv.writer(f, delimiter=";")
                 # Header schreiben, wenn die Datei neu ist
                 if not file_exists:
                     writer.writerow(header)

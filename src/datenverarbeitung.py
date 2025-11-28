@@ -32,7 +32,7 @@ class Datenverarbeitung:
         self.run_dir = run_dir
         self.visualisierung = Visualisierung(self.run_dir)
 
-    def verarbeite_daten(self, data_type: str, sensor_daten: Optional[bytes], mode_name: str, settings: Optional[dict] = None):
+    def verarbeite_daten(self, data_type: str, sensor_daten: Optional[bytes], mode_name: str, settings: Optional[dict] = None) -> List[List[int]]:
         """
         Zentrale Methode zur Verarbeitung von Sensordaten basierend auf dem Datentyp.
         """
@@ -74,6 +74,7 @@ class Datenverarbeitung:
                             titel=f"Echogramm für Modus '{mode_name}'",
                             block_index=i
                         )
+                return measurements
             else:
                 self.logger.warning(
                     "Keine gültigen Datenblöcke im Echogramm gefunden.")
@@ -176,8 +177,6 @@ class Datenverarbeitung:
 
         return alle_daten_bloecke
 
-
-
     def parse_12_bit_binary_data(self, bin_data: Optional[bytes]) -> List[int]:
         """Parses the raw binary data from the sonar into a dictionary with the meaning of the bytes."""
         message = {}
@@ -271,18 +270,20 @@ class Datenverarbeitung:
             filename (str, optional): Der Dateiname. Standardmäßig "training_data.csv".
         """
         if not daten_bloecke:
-            self.logger.warning("Keine Datenblöcke zum Schreiben in CSV vorhanden.")
+            self.logger.warning(
+                "Keine Datenblöcke zum Schreiben in CSV vorhanden.")
             return
 
         daten_block = daten_bloecke[0]
-        self.logger.info(f"Füge ersten Ping-Datenblock zur CSV-Datei '{filename}' im Verzeichnis '{self.run_dir}' hinzu...")
+        self.logger.info(
+            f"Füge ersten Ping-Datenblock zur CSV-Datei '{filename}' im Verzeichnis '{self.run_dir}' hinzu...")
 
         filepath = os.path.join(self.run_dir, filename)
         file_exists = os.path.exists(filepath)
 
         # Spaltennamen definieren
         header = [
-            "Timestamp", "Label", "Tx_Frequency_Hz", "NMEA_Altitude_m",
+            "Timestamp", "Label", "Frequency", "NMEA_Depth_m",
             "PulseLength_us", "Sampling_Freq_Hz"
         ]
         # Dynamische Spalten für die Samples hinzufügen
@@ -292,10 +293,12 @@ class Datenverarbeitung:
         row_data = [
             datetime.now().isoformat(),
             label,
-            settings.get("#Tx_Frequency,Hz", ""),
-            settings.get("#Altitude", ""),
-            settings.get("#PulseLength,uks", ""),
-            settings.get("#Sampling_Frequency,Hz", "")
+            "Platzhalter: Frequenz",
+            "Platzhalter: Altitude",
+            # settings.get("frequency_name", ""),
+            # settings.get("nmea_depth", ""),
+            settings.get("IdTxLength", ""),
+            settings.get("IdSamplFreq", "")
         ]
         row_data.extend(daten_block)
 
@@ -309,4 +312,5 @@ class Datenverarbeitung:
                 writer.writerow(row_data)
             self.logger.info(f"Daten erfolgreich in '{filepath}' geschrieben.")
         except IOError as e:
-            self.logger.error(f"Fehler beim Schreiben der CSV-Datei '{filepath}': {e}")
+            self.logger.error(
+                f"Fehler beim Schreiben der CSV-Datei '{filepath}': {e}")

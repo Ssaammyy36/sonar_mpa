@@ -66,13 +66,17 @@ class Steuerung:
         self.logger.debug(f"Nachricht: {sensor_daten.decode('latin_1')}")
 
         # 4. Daten verarbeiten
-        self.datenverarbeitung.verarbeite_daten(
+        daten_bloecke = self.datenverarbeitung.verarbeite_daten(
             data_type=data_type,
             sensor_daten=sensor_daten,
             mode_name=mode_name,
             settings=mode_settings,
         )
         self.logger.info(f"--- Test '{mode_name}' beendet ---")
+
+        # 5. Daten in CSV schreiben
+        self.datenverarbeitung.append_ping_to_csv(
+            daten_bloecke=daten_bloecke, label="Platzhalter", settings=mode_settings)
 
     def starte_anwendung(self):
         """

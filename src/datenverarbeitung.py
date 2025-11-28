@@ -2,6 +2,7 @@ from logger import get_logger
 from typing import List, Optional
 import matplotlib.pyplot as plt
 import ast
+import csv
 import numpy as np
 import os
 from datetime import datetime
@@ -256,3 +257,56 @@ class Datenverarbeitung:
             amps_norm = np.zeros_like(raw_amps, dtype=float)
 
         return time_axis_s, dist_axis_m, amps_norm
+
+    def append_ping_to_csv(self, daten_bloecke: List[List[int]], label: str, settings: dict, filename: str = "training_data.csv"):
+        """
+        Hängt den ersten Datenblock (Ping) aus einer Liste zusammen mit Metadaten an eine CSV-Datei im Run-Verzeichnis an.
+        Diese Funktion ist für das Erstellen von Trainingsdaten für Machine Learning gedacht.
+        Wenn die Datei nicht existiert, wird sie mit einem Header erstellt.
+
+        Args:
+            daten_bloecke (List[List[int]]): Eine Liste von Datenblöcken. Nur der erste Block wird verwendet.
+            label (str): Die Klassifizierung des Untergrunds (z.B. "Sand", "Schlamm").
+            settings (dict): Ein Dictionary mit den Sensor-Metadaten.
+            filename (str, optional): Der Dateiname. Standardmäßig "training_data.csv".
+        """
+        if not daten_bloecke:
+            self.logger.warning("Keine Datenblöcke zum Schreiben in CSV vorhanden.")
+            return
+
+        daten_block = daten_bloecke[0]
+        self.logger.info(f"Füge ersten Ping-Datenblock zur CSV-Datei '{filename}' im Verzeichnis '{self.run_dir}' hinzu...")
+
+        filepath = os.path.join(self.run_dir, filename)
+        file_exists = os.path.exists(filepath)
+
+        # Spaltennamen definieren
+        header = [
+            "Timestamp", "Label", "Tx_Frequency_Hz", "NMEA_Altitude_m",
+            "PulseLength_us", "Sampling_Freq_Hz"
+        ]
+        # Dynamische Spalten für die Samples hinzufügen
+        header.extend([f"S_{i}" for i in range(len(daten_block))])
+
+        # Datenzeile vorbereiten
+        row_data = [
+            datetime.now().isoformat(),
+            label,
+            settings.get("#Tx_Frequency,Hz", ""),
+            settings.get("#Altitude", ""),
+            settings.get("#PulseLength,uks", ""),
+            settings.get("#Sampling_Frequency,Hz", "")
+        ]
+        row_data.extend(daten_block)
+
+        try:
+            with open(filepath, 'a', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                # Header schreiben, wenn die Datei neu ist
+                if not file_exists:
+                    writer.writerow(header)
+                # Datenzeile schreiben
+                writer.writerow(row_data)
+            self.logger.info(f"Daten erfolgreich in '{filepath}' geschrieben.")
+        except IOError as e:
+            self.logger.error(f"Fehler beim Schreiben der CSV-Datei '{filepath}': {e}")

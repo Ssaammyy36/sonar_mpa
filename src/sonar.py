@@ -1,7 +1,7 @@
 import time
 from typing import Optional
 
-from src.logger import get_logger
+from logger import get_logger
 from echosounderapi.echosndr import DualEchosounder
 import config
 

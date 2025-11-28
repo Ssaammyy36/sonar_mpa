@@ -1,4 +1,4 @@
-from src.logger import get_logger
+from logger import get_logger
 from typing import List, Optional
 import matplotlib.pyplot as plt
 import ast

@@ -3,7 +3,7 @@ import sys
 from datetime import datetime
 
 from steuerung import Steuerung
-from src.logger import get_logger, setup_logging
+from logger import get_logger, setup_logging
 
 
 if __name__ == "__main__":

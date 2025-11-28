@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 
-from src.logger import get_logger, setup_logging
+from logger import get_logger, setup_logging
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
 import config

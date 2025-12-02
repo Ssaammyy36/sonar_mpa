@@ -15,7 +15,6 @@ if __name__ == "__main__":
         ]
 
         # Starte die Hauptanwendung
-        # Das Log-Verzeichnis wird automatisch in der Steuerung erstellt
         steuerung = Steuerung(geplante_tests=geplante_tests)
 
     except Exception as e:

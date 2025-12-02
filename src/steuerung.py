@@ -11,22 +11,16 @@ import config
 class Steuerung:
     """
     Steuert den gesamten Ablauf von Sonar-Messungen.
-    Diese Klasse agiert als flexible Engine, die verschiedene, in der Konfiguration
-    definierte Test-Szenarien ausführen kann.
     """
 
-    def __init__(self, geplante_tests: List[config.TestSzenario], run_dir: str = None):
+    def __init__(self, geplante_tests: List[config.TestSzenario]):
         """
         Initialisiert die Steuerung und alle Kernkomponenten.
 
         Args:
             geplante_tests (List[TestSzenario]): Eine Liste von TestSzenario-Objekten.
-            run_dir (str, optional): Das Verzeichnis für diesen Programmlauf. Wenn None, wird es automatisch erstellt.
         """
-        if run_dir:
-            self.run_dir = run_dir
-        else:
-            self.run_dir = Path('logs') / datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.run_dir = Path('logs') / datetime.now().strftime('%Y%m%d_%H%M%S')
         
         # Verzeichnis erstellen und Logging konfigurieren
         Path(self.run_dir).mkdir(parents=True, exist_ok=True)
@@ -68,9 +62,8 @@ class Steuerung:
         mode_settings["class_name"] = class_name
         mode_settings["frequency"] = frequency
 
-        self.logger.info(f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
-
         # 2. Sonar konfigurieren
+        self.logger.info(f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
         self.sonar.konfigurieren(
             output_mode=output_mode_id,
             frequency=frequency,
@@ -85,7 +78,7 @@ class Steuerung:
             self.logger.error(f"Keine Daten für Test {mode_name} empfangen!")
             return
 
-        # Formatierung für das Log: Zeilenumbrüche durch Kommas ersetzen, um das Log kompakt zu halten
+        # Loggen der empfangenen Daten
         raw_text = sensor_daten.decode('latin_1')
         formatted_text = raw_text.replace('\r', '').replace('\n', ', ')
         self.logger.debug(f"Nachricht: {formatted_text}")

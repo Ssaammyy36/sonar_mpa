@@ -1,3 +1,11 @@
+from dataclasses import dataclass
+
+@dataclass
+class TestSzenario:
+    mode_id: str
+    class_name: str
+    frequency: str = "low"
+
 # Allgemeine serielle Einstellungen
 COMPORT: str = "COM5"
 BAUDRATE: int = 115200

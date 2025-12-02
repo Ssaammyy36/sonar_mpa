@@ -3,9 +3,6 @@
 __pycache__/
 *.py[cod]
 
-# Virtuelle Umgebungen
-
-
 # Test-Ordner (z.B. für temporäre Testdaten)
 tests/__pycache__/
 tests/*.pyc
@@ -22,8 +19,8 @@ tests/*.log
 logs/*
 
 # Configs und Main 
-src/config.py
-src/main.py
+#src/config.py
+#src/main.py
 
 # Data 
 data/*

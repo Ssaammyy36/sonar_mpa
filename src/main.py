@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from steuerung import Steuerung
 from logger import setup_logging
+from config import TestSzenario
 
 
 if __name__ == "__main__":
@@ -12,8 +13,8 @@ if __name__ == "__main__":
     try:
         # --- HIER DIE GEWÜNSCHTEN TESTS DEFINIEREN ---
         geplante_tests = [
-            {"mode_id": "4", "frequency": "low", "class": "Gravel"},
-            {"mode_id": "4", "frequency": "low", "class": "Test"}
+            TestSzenario(mode_id="4", frequency="low", class_name="Gravel"),
+            TestSzenario(mode_id="4", frequency="low", class_name="Test")
         ]
 
         # 1. Log-Verzeichnis

@@ -13,13 +13,13 @@ class Steuerung:
     definierte Test-Szenarien ausführen kann.
     """
 
-    def __init__(self, run_dir: str, geplante_tests: List[Dict[str, Any]]):
+    def __init__(self, run_dir: str, geplante_tests: List[config.TestSzenario]):
         """
         Initialisiert die Steuerung und alle Kernkomponenten.
 
         Args:
             run_dir (str): Das Verzeichnis für diesen Programmlauf, in dem Logs und Plots gespeichert werden.
-            geplante_tests (List[Dict[str, Any]]): Eine Liste von Dictionaries, wobei jedes Dict einen Test definiert.
+            geplante_tests (List[TestSzenario]): Eine Liste von TestSzenario-Objekten.
         """
         self.run_dir = run_dir
         self.geplante_tests = geplante_tests
@@ -70,6 +70,11 @@ class Steuerung:
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
         read_timeout = mode_settings.get("read_timeout", 2.0)
         sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
+        
+        if not sensor_daten:
+            self.logger.error(f"Keine Daten für Test {mode_name} empfangen!")
+            return
+
         # Formatierung für das Log: Zeilenumbrüche durch Kommas ersetzen, um das Log kompakt zu halten
         raw_text = sensor_daten.decode('latin_1')
         formatted_text = raw_text.replace('\r', '').replace('\n', ', ')
@@ -100,18 +105,10 @@ class Steuerung:
         if self.sonar.verbinden():
             self.logger.info("Sonar erfolgreich verbunden.")
 
-            for test_config in self.geplante_tests:
+            for test in self.geplante_tests:
 
                 # Aktueller Test i
-                mode_id = test_config.get("mode_id")
-                frequency = test_config.get("frequency", "low")  # Default auf "low"
-                class_name = test_config.get("class")
-
-                if not mode_id:
-                    self.logger.error(f"Ungültiger Test in der Liste, 'mode_id' fehlt: {test_config}")
-                    continue
-
-                self.run_single_test(mode_id=mode_id, frequency=frequency, class_name=class_name)
+                self.run_single_test(mode_id=test.mode_id, frequency=test.frequency, class_name=test.class_name)
 
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")

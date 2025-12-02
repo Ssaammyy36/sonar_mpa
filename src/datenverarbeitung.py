@@ -281,7 +281,7 @@ class Datenverarbeitung:
 
         # Spaltennamen definieren
         header = [
-            "Timestamp", "Label", "Frequency", "NMEA_Depth_m",
+            "Timestamp", "class_name", "Frequency", "NMEA_Depth_m",
             "PulseLength_us", "Sampling_Freq_Hz"
         ]
         # Dynamische Spalten für die Samples hinzufügen

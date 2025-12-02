@@ -19,6 +19,7 @@ class Steuerung:
 
         Args:
             run_dir (str): Das Verzeichnis für diesen Programmlauf, in dem Logs und Plots gespeichert werden.
+            geplante_tests (List[Dict[str, Any]]): Eine Liste von Dictionaries, wobei jedes Dict einen Test definiert.
         """
         self.run_dir = run_dir
         self.geplante_tests = geplante_tests
@@ -27,6 +28,8 @@ class Steuerung:
         self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
+
+        self.run_tests()
 
     def fuehre_test_durch(self, mode_id: str, frequency: str, class_name: str):
         """
@@ -50,7 +53,12 @@ class Steuerung:
         data_type = mode_config["data_type"]
 
         # Lade die spezifischen Einstellungen für den Modus und die angegebene Frequenz
-        mode_settings = mode_config.get("settings", {}).get(frequency)
+        # Wir erstellen eine Kopie, um die globalen Config-Daten nicht zu verändern
+        mode_settings = mode_config.get("settings", {}).get(frequency, {}).copy()
+        
+        # Metadaten hinzufügen
+        mode_settings["class_name"] = class_name
+        mode_settings["frequency"] = frequency
 
         self.logger.info(f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
 
@@ -62,7 +70,7 @@ class Steuerung:
         )
 
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
-        read_timeout = mode_settings.get("read_timeout", 2.0) if mode_settings else 2.0
+        read_timeout = mode_settings.get("read_timeout", 2.0)
         sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
         self.logger.debug(f"Nachricht: {sensor_daten.decode('latin_1')}")
 
@@ -76,15 +84,11 @@ class Steuerung:
         self.logger.info(f"--- Test '{mode_name}' beendet ---")
 
         # 5. Daten in CSV schreiben
-        self.datenverarbeitung.append_ping_to_csv(daten_bloecke=daten_bloecke, class_name=class_name, settings=mode_settings)
+        self.datenverarbeitung.append_ping_to_csv(daten_bloecke=daten_bloecke, settings=mode_settings)
 
-    def starte_anwendung(self):
+    def run_tests(self):
         """
-        Hauptmethode, die eine Liste von Tests nacheinander ausführt.
-
-        Args:
-            geplante_tests: Eine Liste von Dictionaries, wobei jedes Dict einen Test definiert.
-                   Beispiel: [{"mode_id": "4", "frequency": "low"}, {"mode_id": "4", "frequency": "high"}]
+        Führt eine Liste von Tests nacheinander aus.
         """
         self.logger.info(f"Sonar-Anwendung wird gestartet, {len(self.geplante_tests)} Test(s) geplant.")
 

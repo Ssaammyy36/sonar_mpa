@@ -25,9 +25,7 @@ if __name__ == "__main__":
 
         # Starte die Hauptanwendung und übergebe das Laufzeit-Verzeichnis
         steuerung = Steuerung(run_dir=run_dir, geplante_tests=geplante_tests)
-        steuerung.starte_anwendung()
 
     except Exception as e:
-        print(
-            f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
+        print(f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
         sys.exit(1)

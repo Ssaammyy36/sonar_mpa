@@ -14,6 +14,15 @@ FREQUENCIES = {
     }
 }
 
+CLASSES = {
+    "Grave",
+    "Sand",
+    "Soil",
+    "Vertical tub",
+    "Horizontal tub"
+}
+
+
 # Strukturierte Definition aller verfügbaren Sonar-Modi
 # Dies ermöglicht es der Steuerungs-Klasse, die Details eines Modus nachzuschlagen,
 # anstatt sie in if/else-Blöcken hart zu kodieren.

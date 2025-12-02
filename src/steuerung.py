@@ -37,6 +37,9 @@ class Steuerung:
             frequency: Die zu verwendende Frequenz ("low" oder "high").
         """
         # 1. Konfiguration laden
+        if class_name and class_name not in config.CLASSES:
+            self.logger.warning(f"Warnung: Unbekannte Klasse '{class_name}'. Erlaubt sind: {config.CLASSES}")
+
         mode_config = config.MODES.get(mode_id)  # 2,3,4,100,101
         if not mode_config:
             self.logger.error(f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
@@ -95,7 +98,7 @@ class Steuerung:
             for test_config in self.geplante_tests:
                 mode_id = test_config.get("mode_id")
                 frequency = test_config.get("frequency", "low")  # Default auf "low"
-                class_name = test_config.get("class_name")
+                class_name = test_config.get("class")
 
                 if not mode_id:
                     self.logger.error(f"Ungültiger Test in der Liste, 'mode_id' fehlt: {test_config}")

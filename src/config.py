@@ -19,7 +19,8 @@ CLASSES = {
     "Sand",
     "Soil",
     "Vertical tub",
-    "Horizontal tub"
+    "Horizontal tub",
+    "Test"
 }
 
 

@@ -12,19 +12,19 @@ if __name__ == "__main__":
     try:
         # --- HIER DIE GEWÜNSCHTEN TESTS DEFINIEREN ---
         geplante_tests = [
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"},
-            {"mode_id": "4", "frequency": "low"}
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"},
+            {"mode_id": "4", "frequency": "low", "class": "Horizontal tub"}
         ]
 
         # 1. Log-Verzeichnis
@@ -35,8 +35,7 @@ if __name__ == "__main__":
         setup_logging(run_dir)
 
         # Starte die Hauptanwendung und übergebe das Laufzeit-Verzeichnis
-        steuerung = Steuerung(
-            run_dir=run_dir, tests=geplante_tests)
+        steuerung = Steuerung(run_dir=run_dir, geplante_tests=geplante_tests)
         steuerung.starte_anwendung()
 
     except Exception as e:

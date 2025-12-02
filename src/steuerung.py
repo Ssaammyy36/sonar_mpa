@@ -13,7 +13,7 @@ class Steuerung:
     definierte Test-Szenarien ausführen kann.
     """
 
-    def __init__(self, run_dir: str, tests: List[Dict[str, Any]]):
+    def __init__(self, run_dir: str, geplante_tests: List[Dict[str, Any]]):
         """
         Initialisiert die Steuerung und alle Kernkomponenten.
 
@@ -21,7 +21,8 @@ class Steuerung:
             run_dir (str): Das Verzeichnis für diesen Programmlauf, in dem Logs und Plots gespeichert werden.
         """
         self.run_dir = run_dir
-        self.tests = tests
+        self.geplante_tests = geplante_tests
+
         self.logger = get_logger(__name__)
         self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
@@ -83,20 +84,20 @@ class Steuerung:
         Hauptmethode, die eine Liste von Tests nacheinander ausführt.
 
         Args:
-            tests: Eine Liste von Dictionaries, wobei jedes Dict einen Test definiert.
+            geplante_tests: Eine Liste von Dictionaries, wobei jedes Dict einen Test definiert.
                    Beispiel: [{"mode_id": "4", "frequency": "low"}, {"mode_id": "4", "frequency": "high"}]
         """
         self.logger.info(
-            f"Sonar-Anwendung wird gestartet, {len(self.tests)} Test(s) geplant.")
+            f"Sonar-Anwendung wird gestartet, {len(self.geplante_tests)} Test(s) geplant.")
 
-        if not self.tests:
+        if not self.geplante_tests:
             self.logger.warning("Keine Tests zur Ausführung angegeben.")
             return
 
         if self.sonar.verbinden():
             self.logger.info("Sonar erfolgreich verbunden.")
 
-            for test_config in self.tests:
+            for test_config in self.geplante_tests:
                 mode_id = test_config.get("mode_id")
                 frequency = test_config.get(
                     "frequency", "low")  # Default auf "low"

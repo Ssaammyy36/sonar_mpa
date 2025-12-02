@@ -257,7 +257,7 @@ class Datenverarbeitung:
 
         return time_axis_s, dist_axis_m, amps_norm
 
-    def append_ping_to_csv(self, daten_bloecke: List[List[int]], label: str, settings: dict, filename: str = "training_data.csv"):
+    def append_ping_to_csv(self, daten_bloecke: List[List[int]], class_name: str, settings: dict, filename: str = "training_data.csv"):
         """
         Hängt den ersten Datenblock (Ping) aus einer Liste zusammen mit Metadaten an eine CSV-Datei im Run-Verzeichnis an.
         Diese Funktion ist für das Erstellen von Trainingsdaten für Machine Learning gedacht.
@@ -265,18 +265,16 @@ class Datenverarbeitung:
 
         Args:
             daten_bloecke (List[List[int]]): Eine Liste von Datenblöcken. Nur der erste Block wird verwendet.
-            label (str): Die Klassifizierung des Untergrunds (z.B. "Sand", "Schlamm").
+            class_name (str): Die Klassifizierung des Untergrunds (z.B. "Sand", "Schlamm").
             settings (dict): Ein Dictionary mit den Sensor-Metadaten.
             filename (str, optional): Der Dateiname. Standardmäßig "training_data.csv".
         """
         if not daten_bloecke:
-            self.logger.warning(
-                "Keine Datenblöcke zum Schreiben in CSV vorhanden.")
+            self.logger.warning("Keine Datenblöcke zum Schreiben in CSV vorhanden.")
             return
 
         daten_block = daten_bloecke[0]
-        self.logger.info(
-            f"Füge ersten Ping-Datenblock zur CSV-Datei '{filename}' im Verzeichnis '{self.run_dir}' hinzu...")
+        self.logger.info(f"Füge ersten Ping-Datenblock zur CSV-Datei '{filename}' im Verzeichnis '{self.run_dir}' hinzu...")
 
         filepath = os.path.join(self.run_dir, filename)
         file_exists = os.path.exists(filepath)
@@ -292,7 +290,7 @@ class Datenverarbeitung:
         # Datenzeile vorbereiten
         row_data = [
             datetime.now().isoformat(),
-            label,
+            class_name,
             "Platzhalter: Frequenz",
             "Platzhalter: Altitude",
             # settings.get("frequency_name", ""),

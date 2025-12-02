@@ -28,7 +28,7 @@ class Steuerung:
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
-    def fuehre_test_durch(self, mode_id: str, frequency: str):
+    def fuehre_test_durch(self, mode_id: str, frequency: str, class_name: str):
         """
         Führt einen einzelnen, klar definierten Test basierend auf der Konfiguration durch.
 
@@ -39,8 +39,7 @@ class Steuerung:
         # 1. Konfiguration laden
         mode_config = config.MODES.get(mode_id)  # 2,3,4,100,101
         if not mode_config:
-            self.logger.error(
-                f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
+            self.logger.error(f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
             return
 
         mode_name = mode_config["name"]
@@ -50,8 +49,7 @@ class Steuerung:
         # Lade die spezifischen Einstellungen für den Modus und die angegebene Frequenz
         mode_settings = mode_config.get("settings", {}).get(frequency)
 
-        self.logger.info(
-            f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
+        self.logger.info(f"--- Starte Test: Modus '{mode_name}' ({mode_id}) mit Frequenz '{frequency}' ---")
 
         # 2. Sonar konfigurieren
         self.sonar.konfigurieren(
@@ -61,8 +59,7 @@ class Steuerung:
         )
 
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
-        read_timeout = mode_settings.get(
-            "read_timeout", 2.0) if mode_settings else 2.0
+        read_timeout = mode_settings.get("read_timeout", 2.0) if mode_settings else 2.0
         sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
         self.logger.debug(f"Nachricht: {sensor_daten.decode('latin_1')}")
 
@@ -76,8 +73,7 @@ class Steuerung:
         self.logger.info(f"--- Test '{mode_name}' beendet ---")
 
         # 5. Daten in CSV schreiben
-        self.datenverarbeitung.append_ping_to_csv(
-            daten_bloecke=daten_bloecke, label="Platzhalter", settings=mode_settings)
+        self.datenverarbeitung.append_ping_to_csv(daten_bloecke=daten_bloecke, class_name=class_name, settings=mode_settings)
 
     def starte_anwendung(self):
         """
@@ -87,8 +83,7 @@ class Steuerung:
             geplante_tests: Eine Liste von Dictionaries, wobei jedes Dict einen Test definiert.
                    Beispiel: [{"mode_id": "4", "frequency": "low"}, {"mode_id": "4", "frequency": "high"}]
         """
-        self.logger.info(
-            f"Sonar-Anwendung wird gestartet, {len(self.geplante_tests)} Test(s) geplant.")
+        self.logger.info(f"Sonar-Anwendung wird gestartet, {len(self.geplante_tests)} Test(s) geplant.")
 
         if not self.geplante_tests:
             self.logger.warning("Keine Tests zur Ausführung angegeben.")
@@ -99,20 +94,18 @@ class Steuerung:
 
             for test_config in self.geplante_tests:
                 mode_id = test_config.get("mode_id")
-                frequency = test_config.get(
-                    "frequency", "low")  # Default auf "low"
+                frequency = test_config.get("frequency", "low")  # Default auf "low"
+                class_name = test_config.get("class_name")
+
                 if not mode_id:
-                    self.logger.warning(
-                        f"Ungültiger Test in der Liste, 'mode_id' fehlt: {test_config}")
+                    self.logger.error(f"Ungültiger Test in der Liste, 'mode_id' fehlt: {test_config}")
                     continue
 
-                self.fuehre_test_durch(mode_id=mode_id, frequency=frequency)
+                self.fuehre_test_durch(mode_id=mode_id, frequency=frequency, class_name=class_name)
 
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
         else:
-            self.logger.error(
-                "Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
+            self.logger.error("Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
 
-        self.logger.info(
-            "Alle geplanten Tests abgeschlossen. Sonar-Anwendung beendet.")
+        self.logger.info("Alle geplanten Tests abgeschlossen. Sonar-Anwendung beendet.")

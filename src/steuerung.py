@@ -1,4 +1,6 @@
 from typing import List, Dict, Any
+from pathlib import Path
+from datetime import datetime
 
 from logger import get_logger, setup_logging
 from sonar import Sonar
@@ -13,15 +15,23 @@ class Steuerung:
     definierte Test-Szenarien ausführen kann.
     """
 
-    def __init__(self, run_dir: str, geplante_tests: List[config.TestSzenario]):
+    def __init__(self, geplante_tests: List[config.TestSzenario], run_dir: str = None):
         """
         Initialisiert die Steuerung und alle Kernkomponenten.
 
         Args:
-            run_dir (str): Das Verzeichnis für diesen Programmlauf, in dem Logs und Plots gespeichert werden.
             geplante_tests (List[TestSzenario]): Eine Liste von TestSzenario-Objekten.
+            run_dir (str, optional): Das Verzeichnis für diesen Programmlauf. Wenn None, wird es automatisch erstellt.
         """
-        self.run_dir = run_dir
+        if run_dir:
+            self.run_dir = run_dir
+        else:
+            self.run_dir = Path('logs') / datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Verzeichnis erstellen und Logging konfigurieren
+        Path(self.run_dir).mkdir(parents=True, exist_ok=True)
+        setup_logging(self.run_dir)
+
         self.geplante_tests = geplante_tests
 
         self.logger = get_logger(__name__)

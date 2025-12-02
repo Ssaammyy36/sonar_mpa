@@ -44,6 +44,10 @@ def setup_logging(log_dir: str):
     file_handler.setFormatter(formatter)
     root_logger.addHandler(file_handler)
 
+    # Unterdrücke Debug-Nachrichten von externen Bibliotheken
+    logging.getLogger("PIL").setLevel(logging.WARNING)
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
     _logging_configured = True
     logging.info(f"Logging konfiguriert. Log-Datei unter: {log_file_path}")
 

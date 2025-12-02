@@ -12,7 +12,7 @@ if __name__ == "__main__":
     try:
         # --- HIER DIE GEWÜNSCHTEN TESTS DEFINIEREN ---
         geplante_tests = [
-            {"mode_id": "4", "frequency": "low", "class": "Grave"},
+            {"mode_id": "4", "frequency": "low", "class": "Gravel"},
             {"mode_id": "4", "frequency": "low", "class": "Test"}
         ]
 

@@ -50,8 +50,7 @@ class Sonar:
 
         # Check
         if not self.echosounder:
-            self.logger.warning(
-                "Sonar nicht verbunden. Konfiguration nicht möglich.")
+            self.logger.warning("Sonar nicht verbunden. Konfiguration nicht möglich.")
             return
 
         # Config
@@ -62,11 +61,9 @@ class Sonar:
         if freq_config and "command" in freq_config:
             command = freq_config["command"]
             self.echosounder.SendCommand(command)
-            self.logger.info(
-                f"Konfiguration: {output_mode=}, frequency='{frequency}' (Befehl: {command})")
+            self.logger.info(f"Konfiguration: {output_mode=}, frequency='{frequency}' (Befehl: {command})")
         else:
-            self.logger.error(
-                f"Frequenz '{frequency}' ist nicht oder nicht vollständig in config.py definiert.")
+            self.logger.error(f"Frequenz '{frequency}' ist nicht oder nicht vollständig in config.py definiert.")
             return
 
         # Wende spezifische Modus-Einstellungen an, falls vorhanden
@@ -83,8 +80,7 @@ class Sonar:
 
         # Check for Sonar Objekt
         if not self.echosounder:
-            self.logger.warning(
-                "Sonar nicht verbunden. Datenlesen nicht möglich.")
+            self.logger.warning("Sonar nicht verbunden. Datenlesen nicht möglich.")
             return None
 
         # Scannen

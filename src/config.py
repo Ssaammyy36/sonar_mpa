@@ -15,7 +15,7 @@ FREQUENCIES = {
 }
 
 CLASSES = {
-    "Grave",
+    "l",
     "Sand",
     "Soil",
     "Vertical tub",

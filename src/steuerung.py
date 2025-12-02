@@ -31,13 +31,14 @@ class Steuerung:
 
         self.run_tests()
 
-    def fuehre_test_durch(self, mode_id: str, frequency: str, class_name: str):
+    def run_single_test(self, mode_id: str, frequency: str, class_name: str):
         """
         Führt einen einzelnen, klar definierten Test basierend auf der Konfiguration durch.
 
         Args:
             mode_id: Die ID des Testmodus (z.B. "3", "4", "100").
             frequency: Die zu verwendende Frequenz ("low" oder "high").
+            class_name: Die Klasse des Tests (z.B. "Test" oder "Gravel").
         """
         # 1. Konfiguration laden
         if class_name and class_name not in config.CLASSES:
@@ -52,11 +53,8 @@ class Steuerung:
         output_mode_id = mode_config["output_mode_id"]
         data_type = mode_config["data_type"]
 
-        # Lade die spezifischen Einstellungen für den Modus und die angegebene Frequenz
-        # Wir erstellen eine Kopie, um die globalen Config-Daten nicht zu verändern
+        # Lade die spezifischen Einstellungen für den Modus
         mode_settings = mode_config.get("settings", {}).get(frequency, {}).copy()
-        
-        # Metadaten hinzufügen
         mode_settings["class_name"] = class_name
         mode_settings["frequency"] = frequency
 
@@ -90,7 +88,7 @@ class Steuerung:
         """
         Führt eine Liste von Tests nacheinander aus.
         """
-        self.logger.info(f"Sonar-Anwendung wird gestartet, {len(self.geplante_tests)} Test(s) geplant.")
+        self.logger.info(f"--- Sonar-Anwendung wird gestartet, {len(self.geplante_tests)} Test(s) geplant. ---")
 
         if not self.geplante_tests:
             self.logger.warning("Keine Tests zur Ausführung angegeben.")
@@ -100,6 +98,8 @@ class Steuerung:
             self.logger.info("Sonar erfolgreich verbunden.")
 
             for test_config in self.geplante_tests:
+
+                # Aktueller Test i
                 mode_id = test_config.get("mode_id")
                 frequency = test_config.get("frequency", "low")  # Default auf "low"
                 class_name = test_config.get("class")
@@ -108,7 +108,7 @@ class Steuerung:
                     self.logger.error(f"Ungültiger Test in der Liste, 'mode_id' fehlt: {test_config}")
                     continue
 
-                self.fuehre_test_durch(mode_id=mode_id, frequency=frequency, class_name=class_name)
+                self.run_single_test(mode_id=mode_id, frequency=frequency, class_name=class_name)
 
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")

@@ -70,7 +70,10 @@ class Steuerung:
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
         read_timeout = mode_settings.get("read_timeout", 2.0)
         sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
-        self.logger.debug(f"Nachricht: {sensor_daten.decode('latin_1')}")
+        # Formatierung für das Log: Zeilenumbrüche durch Kommas ersetzen, um das Log kompakt zu halten
+        raw_text = sensor_daten.decode('latin_1')
+        formatted_text = raw_text.replace('\r', '').replace('\n', ', ')
+        self.logger.debug(f"Nachricht: {formatted_text}")
 
         # 4. Daten verarbeiten
         daten_bloecke = self.datenverarbeitung.verarbeite_daten(
@@ -79,7 +82,7 @@ class Steuerung:
             mode_name=mode_name,
             settings=mode_settings,
         )
-        self.logger.info(f"--- Test '{mode_name}' beendet ---")
+        self.logger.info(f"Test '{mode_name}' beendet")
 
         # 5. Daten in CSV schreiben
         self.datenverarbeitung.append_ping_to_csv(daten_bloecke=daten_bloecke, settings=mode_settings)

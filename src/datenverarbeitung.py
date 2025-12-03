@@ -162,7 +162,7 @@ class EchogramProcessor(DataProcessor):
         else:
             header_text = packet[:end_index]
 
-        self.logger.debug(f"Header extrahiert: {header_text}")
+        #self.logger.debug(f"Header extrahiert: {header_text}")
         return self._parse_header_section(header_text)
 
     def _extract_data(self, packet: str) -> List[int]:
@@ -182,8 +182,18 @@ class EchogramProcessor(DataProcessor):
         if end_index != -1:
             data_text = data_text[:end_index]
 
-        self.logger.debug(f"Datenpunkte geparst: {data_text}")    
-        return [int(wert) for wert in data_text.strip().split() if wert.strip().isdigit()]
+        #self.logger.debug(f"Datenpunkte geparst: {data_text}")    
+        # Kommas durch Leerzeichen ersetzen, falls die Daten kommagetrennt sind
+        cleaned_text = data_text.replace(',', ' ')
+        
+        daten_punkte = []
+        for wert in cleaned_text.split():
+            wert = wert.strip()
+            if wert.isdigit():
+                daten_punkte.append(int(wert))
+        
+        self.logger.debug(f"Datenpunkte geparst: {daten_punkte}")
+        return daten_punkte
 
     def _parse_header_section(self, text: str) -> dict:
         """Parst Zeilen, die mit '#' beginnen, in ein Dictionary."""

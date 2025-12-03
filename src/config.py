@@ -32,6 +32,13 @@ CLASSES = {
 }
 
 
+# Allgemeine Logging-Einstellungen
+LOGGING_CONFIG = {
+    "plot_echograms": True,
+    "save_csv": True,
+    "log_raw_data": False
+}
+
 # Strukturierte Definition aller verfügbaren Sonar-Modi
 # Dies ermöglicht es der Steuerungs-Klasse, die Details eines Modus nachzuschlagen,
 # anstatt sie in if/else-Blöcken hart zu kodieren.
@@ -51,7 +58,7 @@ MODES = {
     "4": {
         "name": "12bit-Echogram",
         "output_mode_id": "4",
-        "data_type": "echogram_plotted", # Eigener Typ, um Plotting auszulösen
+        "data_type": "echogram",
         "description": "Verarbeitet 12-Bit Echogramm-Daten (ASCII) und stellt sie grafisch dar.",
         "settings": {
             "low": {

@@ -4,6 +4,7 @@ import numpy as np
 import csv
 import os
 from datetime import datetime
+import config
 
 from logger import get_logger
 from visualisierung import Visualisierung
@@ -63,10 +64,9 @@ class NMEAProcessor(DataProcessor):
 
 class EchogramProcessor(DataProcessor):
     """Verarbeitet Echogramm-Daten (ASCII)."""
-    def __init__(self, visualisierung: Optional[Visualisierung] = None, plot: bool = False):
+    def __init__(self, visualisierung: Optional[Visualisierung] = None):
         super().__init__()
         self.visualisierung = visualisierung
-        self.should_plot = plot
 
     def _convert(self, raw_data: bytes) -> str:
         return raw_data.decode("latin_1")
@@ -88,7 +88,7 @@ class EchogramProcessor(DataProcessor):
         if measurements:
             self.logger.info(f"{len(measurements)} Ping(s) mit insgesamt {sum(len(p[1]) for p in measurements)} Datenpunkten geparst.")
             
-            if self.should_plot and self.visualisierung:
+            if config.LOGGING_CONFIG["plot_echograms"] and self.visualisierung:
                 self._plot_measurements(measurements, mode_name, settings)
         else:
             self.logger.warning("Keine gültigen Datenblöcke im Echogramm gefunden.")
@@ -297,8 +297,7 @@ class Datenverarbeitung:
         # Registrierung der Strategien
         self.processors = {
             "nmea": NMEAProcessor(),
-            "echogram": EchogramProcessor(self.visualisierung, plot=False),
-            "echogram_plotted": EchogramProcessor(self.visualisierung, plot=True),
+            "echogram": EchogramProcessor(self.visualisierung),
             "binary": BinaryProcessor()
         }
 

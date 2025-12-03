@@ -81,7 +81,7 @@ class Steuerung:
         # Loggen der empfangenen Daten
         raw_text = sensor_daten.decode('latin_1')
         formatted_text = raw_text.replace('\r', '').replace('\n', ', ')
-        self.logger.debug(f"Nachricht: {formatted_text}")
+        #self.logger.debug(f"Nachricht: {formatted_text}")
 
         # 4. Daten verarbeiten
         daten_bloecke = self.datenverarbeitung.verarbeite_daten(

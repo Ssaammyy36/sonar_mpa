@@ -46,7 +46,8 @@ class Steuerung:
         """
         # 1. Konfiguration laden
         if class_name and class_name not in config.CLASSES:
-            self.logger.warning(f"Warnung: Unbekannte Klasse '{class_name}'. Erlaubt sind: {config.CLASSES}")
+            self.logger.error(f"Warnung: Unbekannte Klasse '{class_name}'. Erlaubt sind: {config.CLASSES}")
+            return
 
         mode_config = config.MODES.get(mode_id)  # 2,3,4,100,101
         if not mode_config:
@@ -78,13 +79,8 @@ class Steuerung:
             self.logger.error(f"Keine Daten für Test {mode_name} empfangen!")
             return
 
-        # Loggen der empfangenen Daten
-        raw_text = sensor_daten.decode('latin_1')
-        formatted_text = raw_text.replace('\r', '').replace('\n', ', ')
-        #self.logger.debug(f"Nachricht: {formatted_text}")
-
         # 4. Daten verarbeiten
-        daten_bloecke = self.datenverarbeitung.verarbeite_daten(
+        data_packages = self.datenverarbeitung.verarbeite_daten(
             data_type=data_type,
             sensor_daten=sensor_daten,
             mode_name=mode_name,
@@ -93,7 +89,7 @@ class Steuerung:
         self.logger.info(f"Test '{mode_name}' beendet")
 
         # 5. Daten in CSV schreiben
-        self.datenverarbeitung.append_ping_to_csv(daten_bloecke=daten_bloecke, settings=mode_settings)
+        self.datenverarbeitung.append_ping_to_csv(data_packages=data_packages, settings=mode_settings)
 
     def run_tests(self):
         """

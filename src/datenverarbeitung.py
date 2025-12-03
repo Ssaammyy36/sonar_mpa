@@ -317,12 +317,12 @@ class Datenverarbeitung:
         self.logger.info(f"Verarbeite Daten für Modus '{mode_name}' mit Processor '{processor.__class__.__name__}'...")
         return processor.process(sensor_daten, mode_name, settings or {})
 
-    def append_ping_to_csv(self, daten_bloecke: Any, settings: dict, filename: str = "training_data.csv"):
+    def append_ping_to_csv(self, data_packages: Any, settings: dict, filename: str = "training_data.csv"):
         """
         Hängt den ersten Datenblock (Ping) an eine CSV-Datei an.
         Akzeptiert jetzt auch Tupel (Header, Daten) vom EchogramProcessor.
         """
-        if not daten_bloecke:
+        if not data_packages:
             self.logger.warning("Keine Datenblöcke zum Schreiben in CSV vorhanden.")
             return
             
@@ -331,13 +331,13 @@ class Datenverarbeitung:
         header_data = {}
 
         # Fall 1: EchogramProcessor liefert [(header, data), ...]
-        if isinstance(daten_bloecke, list) and daten_bloecke and isinstance(daten_bloecke[0], tuple):
-            header_data, daten_block = daten_bloecke[0]
+        if isinstance(data_packages, list) and data_packages and isinstance(data_packages[0], tuple):
+            header_data, daten_block = data_packages[0]
         # Fall 2: Legacy/Anderer Processor liefert [data, ...]
-        elif isinstance(daten_bloecke, list) and daten_bloecke and isinstance(daten_bloecke[0], list):
-            daten_block = daten_bloecke[0]
+        elif isinstance(data_packages, list) and data_packages and isinstance(data_packages[0], list):
+            daten_block = data_packages[0]
         else:
-             self.logger.debug(f"Datenformat nicht geeignet für CSV-Export: {type(daten_bloecke)}")
+             self.logger.debug(f"Datenformat nicht geeignet für CSV-Export: {type(data_packages)}")
              return
 
         filepath = os.path.join(self.run_dir, filename)

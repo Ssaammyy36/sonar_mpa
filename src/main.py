@@ -11,7 +11,8 @@ if __name__ == "__main__":
         # --- HIER DIE GEWÜNSCHTEN TESTS DEFINIEREN ---
         geplante_tests = [
             TestSzenario(mode_id="4", frequency="low", class_name="Gravel"),
-            TestSzenario(mode_id="4", frequency="low", class_name="Test")
+            TestSzenario(mode_id="4", frequency="high", class_name="Sand"),
+            TestSzenario(mode_id="4", frequency="high", class_name="Test")
         ]
 
         # Starte die Hauptanwendung

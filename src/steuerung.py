@@ -5,6 +5,7 @@ from datetime import datetime
 from logger import get_logger, setup_logging
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
+from data_types import TestSzenario
 import config
 
 
@@ -13,7 +14,7 @@ class Steuerung:
     Steuert den gesamten Ablauf von Sonar-Messungen.
     """
 
-    def __init__(self, geplante_tests: List[config.TestSzenario]):
+    def __init__(self, geplante_tests: List[TestSzenario]):
         """
         Initialisiert die Steuerung und alle Kernkomponenten.
 

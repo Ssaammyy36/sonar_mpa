@@ -8,6 +8,7 @@ import config
 
 from logger import get_logger
 from visualisierung import Visualisierung
+from data_types import Measurement, EchogramMeasurement, NMEAMeasurement, BinaryMeasurement
 
 # --- Interfaces & Strategies ---
 
@@ -17,7 +18,7 @@ class DataProcessor(ABC):
         self.logger = get_logger(self.__class__.__name__)
 
     @abstractmethod
-    def process(self, raw_data: bytes, mode_name: str, settings: dict) -> Any:
+    def process(self, raw_data: bytes, mode_name: str, settings: dict) -> List[Measurement]:
         """Verarbeitet die Rohdaten und gibt das Ergebnis zurück."""
         pass
 
@@ -33,10 +34,10 @@ class NMEAProcessor(DataProcessor):
     def _convert(self, raw_data: bytes) -> str:
         return raw_data.decode("latin_1")
 
-    def process(self, raw_data: bytes, mode_name: str, settings: dict) -> List[float]:
-        tiefen = []
+    def process(self, raw_data: bytes, mode_name: str, settings: dict) -> List[NMEAMeasurement]:
+        measurements = []
         if not raw_data:
-            return tiefen
+            return measurements
 
         try:
             decoded_data = self._convert(raw_data)
@@ -47,20 +48,25 @@ class NMEAProcessor(DataProcessor):
                     parts = line.strip().split(',')
                     if len(parts) > 4 and parts[4] == 'M':
                         try:
-                            tiefen.append(float(parts[3]))
+                            depth = float(parts[3])
+                            measurements.append(NMEAMeasurement(
+                                timestamp=datetime.now(),
+                                raw_data=raw_data,
+                                depth_meters=depth
+                            ))
                         except (ValueError, IndexError):
                             self.logger.warning(f"Fehler beim Parsen des NMEA-Satzes: {line}")
             
-            if tiefen:
-                formatierte_tiefen = ", ".join([f"{t:.2f}m" for t in tiefen])
-                self.logger.info(f"{len(tiefen)} Tiefenwerte geparst: [{formatierte_tiefen}]")
+            if measurements:
+                formatierte_tiefen = ", ".join([f"{m.depth_meters:.2f}m" for m in measurements])
+                self.logger.info(f"{len(measurements)} Tiefenwerte geparst: [{formatierte_tiefen}]")
             else:
                 self.logger.info("Keine gültigen Tiefenwerte ($SDDBT) in den NMEA-Daten gefunden.")
 
         except UnicodeDecodeError as e:
             self.logger.error(f"Fehler beim Dekodieren der NMEA-Daten: {e}")
 
-        return tiefen
+        return measurements
 
 class EchogramProcessor(DataProcessor):
     """Verarbeitet Echogramm-Daten (ASCII)."""
@@ -71,7 +77,7 @@ class EchogramProcessor(DataProcessor):
     def _convert(self, raw_data: bytes) -> str:
         return raw_data.decode("latin_1")
 
-    def process(self, raw_data: bytes, mode_name: str, settings: dict) -> List[Tuple[dict, List[int]]]:
+    def process(self, raw_data: bytes, mode_name: str, settings: dict) -> List[EchogramMeasurement]:
         if not raw_data:
             return []
 
@@ -83,10 +89,15 @@ class EchogramProcessor(DataProcessor):
             header = self._extract_header(packet)
             data = self._extract_data(packet)
             if data:
-                measurements.append((header, data))
+                measurements.append(EchogramMeasurement(
+                    timestamp=datetime.now(),
+                    raw_data=raw_data, # Hier könnte man theoretisch das spezifische Paket-Byte speichern
+                    header=header,
+                    data_points=data
+                ))
 
         if measurements:
-            self.logger.info(f"{len(measurements)} Ping(s) mit insgesamt {sum(len(p[1]) for p in measurements)} Datenpunkten geparst.")
+            self.logger.info(f"{len(measurements)} Ping(s) mit insgesamt {sum(len(m.data_points) for m in measurements)} Datenpunkten geparst.")
             
             if config.LOGGING_CONFIG["plot_echograms"] and self.visualisierung:
                 self._plot_measurements(measurements, mode_name, settings)
@@ -223,16 +234,16 @@ class EchogramProcessor(DataProcessor):
         self.logger.debug(f"Header geparst: {header}")
         return header
 
-    def _plot_measurements(self, measurements: List[Tuple[dict, List[int]]], mode_name: str, settings: dict):
+    def _plot_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
         self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
         current_settings = settings if settings else {}
-        for i, (header, block) in enumerate(measurements):
-            t_s, _, amps_norm = self._berechne_metadaten(block, current_settings)
+        for i, measurement in enumerate(measurements):
+            t_s, _, amps_norm = self._berechne_metadaten(measurement.data_points, current_settings)
             t_ms = t_s * 1000
             
             titel_suffix = ""
-            if "Depth" in header:
-                titel_suffix = f" (Tiefe: {header['Depth']})"
+            if "Depth" in measurement.header:
+                titel_suffix = f" (Tiefe: {measurement.header['Depth']})"
             
             self.visualisierung.plotte_datenpunkte(
                 t_ms,
@@ -275,12 +286,16 @@ class BinaryProcessor(DataProcessor):
     def _convert(self, raw_data: bytes) -> str:
         return raw_data.hex(' ')
 
-    def process(self, raw_data: bytes, mode_name: str, settings: dict) -> dict:
+    def process(self, raw_data: bytes, mode_name: str, settings: dict) -> List[BinaryMeasurement]:
         hex_repr = self._convert(raw_data)
         self.logger.info(f"Binärdaten empfangen ({len(raw_data)} Bytes). Hex: {hex_repr[:50]}...")
         
         # Hier könnte die parse_12_bit_binary_data Logik rein
-        return {"raw_hex": hex_repr}
+        return [BinaryMeasurement(
+            timestamp=datetime.now(),
+            raw_data=raw_data,
+            hex_content=hex_repr
+        )]
 
 # --- Main Class ---
 
@@ -301,13 +316,13 @@ class Datenverarbeitung:
             "binary": BinaryProcessor()
         }
 
-    def verarbeite_daten(self, data_type: str, sensor_daten: Optional[bytes], mode_name: str, settings: Optional[dict] = None) -> Any:
+    def verarbeite_daten(self, data_type: str, sensor_daten: Optional[bytes], mode_name: str, settings: Optional[dict] = None) -> List[Measurement]:
         """
         Delegiert die Verarbeitung an den passenden Processor.
         """
         if not sensor_daten:
             self.logger.warning(f"Keine Daten für Modus '{mode_name}' empfangen.")
-            return None
+            return []
 
         processor = self.processors.get(data_type)
         if not processor:
@@ -317,27 +332,33 @@ class Datenverarbeitung:
         self.logger.info(f"Verarbeite Daten für Modus '{mode_name}' mit Processor '{processor.__class__.__name__}'...")
         return processor.process(sensor_daten, mode_name, settings or {})
 
-    def append_ping_to_csv(self, data_packages: Any, settings: dict, filename: str = "training_data.csv"):
+    def append_ping_to_csv(self, data_packages: List[Measurement], settings: dict, filename: str = "training_data.csv"):
         """
         Hängt den ersten Datenblock (Ping) an eine CSV-Datei an.
-        Akzeptiert jetzt auch Tupel (Header, Daten) vom EchogramProcessor.
         """
         if not data_packages:
             self.logger.warning("Keine Datenblöcke zum Schreiben in CSV vorhanden.")
             return
             
-        # Extrahiere Daten und Header
+        # Wir nehmen den ersten Ping aus dem Paket (falls mehrere drin sind)
+        # TODO: Iteration über alle Pings im Paket?
+        measurement = data_packages[0]
+        
         daten_block = []
         header_data = {}
+        nmea_depth = "NaN"
 
-        # Fall 1: EchogramProcessor liefert [(header, data), ...]
-        if isinstance(data_packages, list) and data_packages and isinstance(data_packages[0], tuple):
-            header_data, daten_block = data_packages[0]
-        # Fall 2: Legacy/Anderer Processor liefert [data, ...]
-        elif isinstance(data_packages, list) and data_packages and isinstance(data_packages[0], list):
-            daten_block = data_packages[0]
+        if isinstance(measurement, EchogramMeasurement):
+            header_data = measurement.header
+            daten_block = measurement.data_points
+            # Versuche Tiefe aus Header zu lesen
+            nmea_depth = header_data.get("Depth", header_data.get("Tiefe", header_data.get("Altitude", "NaN")))
+        elif isinstance(measurement, NMEAMeasurement):
+            nmea_depth = measurement.depth_meters
+            # NMEA hat keine Echogramm-Datenpunkte
+            daten_block = [] 
         else:
-             self.logger.debug(f"Datenformat nicht geeignet für CSV-Export: {type(data_packages)}")
+             self.logger.debug(f"Datenformat nicht geeignet für CSV-Export: {type(measurement)}")
              return
 
         filepath = os.path.join(self.run_dir, filename)

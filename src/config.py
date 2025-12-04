@@ -1,11 +1,3 @@
-from dataclasses import dataclass
-
-@dataclass
-class TestSzenario:
-    mode_id: str
-    class_name: str
-    frequency: str = "low"
-
 # Allgemeine serielle Einstellungen
 COMPORT: str = "COM5"
 BAUDRATE: int = 115200
@@ -22,6 +14,7 @@ FREQUENCIES = {
     }
 }
 
+# Definitionen der verfügbaren Klassen
 CLASSES = {
     "Gravel",
     "Sand",
@@ -31,7 +24,6 @@ CLASSES = {
     "Test"
 }
 
-
 # Allgemeine Logging-Einstellungen
 LOGGING_CONFIG = {
     "plot_echograms": True,
@@ -40,13 +32,11 @@ LOGGING_CONFIG = {
 }
 
 # Strukturierte Definition aller verfügbaren Sonar-Modi
-# Dies ermöglicht es der Steuerungs-Klasse, die Details eines Modus nachzuschlagen,
-# anstatt sie in if/else-Blöcken hart zu kodieren.
 MODES = {
     "2": {
         "name": "10bit-Echogram",
         "output_mode_id": "2",
-        "data_type": "echogram",  # Ein Bezeichner für die Art der Datenverarbeitung
+        "data_type": "echogram",
         "description": "Verarbeitet 10-Bit Echogramm-Daten (ASCII)."
     },
     "3": {
@@ -72,7 +62,6 @@ MODES = {
                 "read_timeout": 2.0
             },
             "high": {
-                # Hier könnten bei Bedarf andere Werte für die hohe Frequenz stehen
                 "IdSamplFreq": "100000", # 6250, 12500, 25000, 50000, 100000
                 "IdRange": "3000",
                 "IdInterval": "1",

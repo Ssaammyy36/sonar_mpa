@@ -1,6 +1,6 @@
 import sys
 from steuerung import Steuerung
-from config import TestSzenario
+from data_types import TestSzenario
 
 
 if __name__ == "__main__":

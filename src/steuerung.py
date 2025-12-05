@@ -5,6 +5,7 @@ from datetime import datetime
 from logger import get_logger, setup_logging
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
+from visualisierung import Visualisierung
 from data_types import TestSzenario
 import config
 
@@ -32,6 +33,7 @@ class Steuerung:
         self.logger = get_logger(__name__)
         self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
+        self.visualisierung = Visualisierung(run_dir=self.run_dir)
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
         self.run_tests()
@@ -89,7 +91,11 @@ class Steuerung:
         )
         self.logger.info(f"Test '{mode_name}' beendet")
 
-        # 5. Daten in CSV schreiben
+        # 5. Visualisieren
+        if config.LOGGING_CONFIG["plot_echograms"] and data_packages:
+            self.visualisierung.plotte_measurements(data_packages, mode_name, mode_settings)
+
+        # 6. Daten in CSV schreiben
         self.datenverarbeitung.append_ping_to_csv(data_packages=data_packages, settings=mode_settings)
 
     def run_tests(self):

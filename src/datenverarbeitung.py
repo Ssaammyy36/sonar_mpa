@@ -7,7 +7,7 @@ from datetime import datetime
 import config
 
 from logger import get_logger
-from visualisierung import Visualisierung
+from logger import get_logger
 from data_types import Measurement, EchogramMeasurement, NMEAMeasurement, BinaryMeasurement
 
 # --- Interfaces & Strategies ---
@@ -70,9 +70,9 @@ class NMEAProcessor(DataProcessor):
 
 class EchogramProcessor(DataProcessor):
     """Verarbeitet Echogramm-Daten (ASCII)."""
-    def __init__(self, visualisierung: Optional[Visualisierung] = None):
+    """Verarbeitet Echogramm-Daten (ASCII)."""
+    def __init__(self):
         super().__init__()
-        self.visualisierung = visualisierung
 
     def _convert(self, raw_data: bytes) -> str:
         return raw_data.decode("latin_1")
@@ -99,8 +99,7 @@ class EchogramProcessor(DataProcessor):
         if measurements:
             self.logger.info(f"{len(measurements)} Ping(s) mit insgesamt {sum(len(m.data_points) for m in measurements)} Datenpunkten geparst.")
             
-            if config.LOGGING_CONFIG["plot_echograms"] and self.visualisierung:
-                self._plot_measurements(measurements, mode_name, settings)
+            self.logger.info(f"{len(measurements)} Ping(s) mit insgesamt {sum(len(m.data_points) for m in measurements)} Datenpunkten geparst.")
         else:
             self.logger.warning("Keine gültigen Datenblöcke im Echogramm gefunden.")
 
@@ -234,50 +233,7 @@ class EchogramProcessor(DataProcessor):
         self.logger.debug(f"Header geparst: {header}")
         return header
 
-    def _plot_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
-        self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
-        current_settings = settings if settings else {}
-        for i, measurement in enumerate(measurements):
-            t_s, _, amps_norm = self._berechne_metadaten(measurement.data_points, current_settings)
-            t_ms = t_s * 1000
-            
-            titel_suffix = ""
-            if "Depth" in measurement.header:
-                titel_suffix = f" (Tiefe: {measurement.header['Depth']})"
-            
-            self.visualisierung.plotte_datenpunkte(
-                t_ms,
-                amps_norm,
-                titel=f"Echogramm für Modus '{mode_name}'{titel_suffix}",
-                block_index=i
-            )
 
-    def _berechne_metadaten(self, amplituden_block: List[int], settings: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        raw_amps = np.array(amplituden_block)
-        num_samples = len(raw_amps)
-
-        if num_samples == 0:
-            return np.array([]), np.array([]), np.array([])
-
-        try:
-            fs_val = settings.get("freqIdSamplFreq", {})
-            fs = float(fs_val) if fs_val else 100000.0
-        except (ValueError, TypeError):
-            fs = 100000.0
-
-        time_axis_s = np.arange(num_samples) / fs
-        sound_speed = 1500.0
-        dist_axis_m = (time_axis_s * sound_speed) / 2
-
-        min_val = raw_amps.min()
-        max_val = raw_amps.max()
-
-        if max_val > min_val:
-            amps_norm = (raw_amps - min_val) / (max_val - min_val)
-        else:
-            amps_norm = np.zeros_like(raw_amps, dtype=float)
-
-        return time_axis_s, dist_axis_m, amps_norm
 
 class BinaryProcessor(DataProcessor):
     """
@@ -307,12 +263,11 @@ class Datenverarbeitung:
     def __init__(self, run_dir: str):
         self.logger = get_logger(__name__)
         self.run_dir = run_dir
-        self.visualisierung = Visualisierung(self.run_dir)
         
         # Registrierung der Strategien
         self.processors = {
             "nmea": NMEAProcessor(),
-            "echogram": EchogramProcessor(self.visualisierung),
+            "echogram": EchogramProcessor(),
             "binary": BinaryProcessor()
         }
 

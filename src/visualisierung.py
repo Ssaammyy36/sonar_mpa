@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Tuple, Dict, Any
+from data_types import EchogramMeasurement
 
 from logger import get_logger
 
@@ -80,3 +81,57 @@ class Visualisierung:
                 f"Fehler beim Speichern des Plots für Block {block_index + 1}: {e}")
         finally:
             plt.close(fig)
+    def plotte_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
+        """
+        Iteriert über eine Liste von Messungen und erstellt Plots.
+        """
+        self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
+        current_settings = settings if settings else {}
+        for i, measurement in enumerate(measurements):
+            t_s, _, amps_norm = self.berechne_metadaten(measurement.data_points, current_settings)
+            t_ms = t_s * 1000
+            
+            titel_suffix = ""
+            if "Depth" in measurement.header:
+                titel_suffix = f" (Tiefe: {measurement.header['Depth']})"
+            
+            self.plotte_datenpunkte(
+                t_ms,
+                amps_norm,
+                titel=f"Echogramm für Modus '{mode_name}'{titel_suffix}",
+                block_index=i
+            )
+
+    def berechne_metadaten(self, amplituden_block: List[int], settings: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Berechnet Zeit- und Entfernungsachsen sowie normierte Amplituden.
+        """
+        raw_amps = np.array(amplituden_block)
+        num_samples = len(raw_amps)
+
+        if num_samples == 0:
+            return np.array([]), np.array([]), np.array([])
+
+        try:
+            fs_val = settings.get("freqIdSamplFreq", {}) # Check key name in config? Usually IdSamplFreq
+            # Fallback check for IdSamplFreq directly if not found
+            if not fs_val:
+                 fs_val = settings.get("IdSamplFreq")
+            
+            fs = float(fs_val) if fs_val else 100000.0
+        except (ValueError, TypeError):
+            fs = 100000.0
+
+        time_axis_s = np.arange(num_samples) / fs
+        sound_speed = 1500.0
+        dist_axis_m = (time_axis_s * sound_speed) / 2
+
+        min_val = raw_amps.min()
+        max_val = raw_amps.max()
+
+        if max_val > min_val:
+            amps_norm = (raw_amps - min_val) / (max_val - min_val)
+        else:
+            amps_norm = np.zeros_like(raw_amps, dtype=float)
+
+        return time_axis_s, dist_axis_m, amps_norm

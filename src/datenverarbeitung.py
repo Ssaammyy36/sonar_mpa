@@ -310,16 +310,7 @@ class Datenverarbeitung:
              self.logger.debug(f"Datenformat nicht geeignet für CSV-Export: {type(measurement)}")
              return
 
-        # Dynamischer Dateiname basierend auf Frequenz und Modus, um "jagged rows" zu vermeiden
-        freq = settings.get("frequency", "unknown")
-        # settings.get("mode_id") ist hier evtl. nicht direkt verfügbar, hängt von Aufrufer ab. 
-        # Wir nutzen frequency als Hauptunterscheidungsmerkmal.
-        
-        dyn_filename = filename
-        if filename == "training_data.csv":
-             dyn_filename = f"training_data_{freq}.csv"
-
-        filepath = os.path.join(self.run_dir, dyn_filename)
+        filepath = os.path.join(self.run_dir, filename)
         file_exists = os.path.exists(filepath)
 
         header = [

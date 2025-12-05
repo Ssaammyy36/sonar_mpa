@@ -1,11 +1,12 @@
-from src.logger import get_logger
-from src.echosounderapi.echosndr import DualEchosounder
 import time
 import sys
 from pathlib import Path
 
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
+
+from src.logger import get_logger
+from src.echosounderapi.echosndr import DualEchosounder
 
 COMPORT: str = "COM5"
 BAUDRATE: int = 115200
@@ -22,7 +23,7 @@ else:
     else:
         ss.SetCurrentTime()              # Sync Echosounder's time with the host PC
         ss.SendCommand("IdSetHighFreq")  # Set High working frequency
-        ss.SetValue("IdOutput", "2")     # Set output #2
+        ss.SetValue("IdOutput", "4")     # Set output #2
         ss.SetValue("IdInterval", "1")   # Set interval between pings 1 seconds
        
         if True == ss.Start():
@@ -31,8 +32,8 @@ else:
             print("Pulse Lenght:", ss.GetValue("IdTxLength"), "uks")
             ss.SetValue("IdTxLengthH", "60")      # Change Tx Length for high working frequency
             print("Pulse Lenght High:", ss.GetValue("IdTxLengthH"), "uks")
-            ss.SetValue("IdTxLengthL", "70")      # Change Tx Length for low working frequency
+            ss.SetValue("IdTxLengthL", "20")      # Change Tx Length for low working frequency
             print("Pulse Lenght Low:", ss.GetValue("IdTxLengthL"), "uks")
             time.sleep(2.0)                       # pause for 2 seconds
             data = ss.ReadData(10000)             # read couple of bytes
-            print(data.decode("latin_1"), end='') # Show data
+            #print(data.decode("latin_1"), end='') # Show data

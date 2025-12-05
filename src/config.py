@@ -56,7 +56,7 @@ MODES = {
                 "IdRange": "3000",
                 "IdInterval": "1",
                 "IdDeadzone": "200",
-                "IdTxLengthL": "500",
+                "IdTxLengthL": "20",
                 "IdTxPower": "0",
                 "IdGain": "0",
                 "read_timeout": 2.0
@@ -66,7 +66,7 @@ MODES = {
                 "IdRange": "3000",
                 "IdInterval": "1",
                 "IdDeadzone": "200",
-                "IdTxLengthH": "500",
+                "IdTxLengthH": "40",
                 "IdTxPower": "0",
                 "IdGain": "0",
                 "read_timeout": 2.0

@@ -74,7 +74,6 @@ class Sonar:
                 if key != "read_timeout":
                     self.echosounder.SetValue(key, str(value))
                     self.logger.info(f"  -> {key}: {value}")
-            self.echosounder.SetValue("IdTxLengthH", "500")
 
     def daten_lesen(self, dauer: float = 2.0) -> Optional[bytes]:
         """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit hex"""

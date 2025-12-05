@@ -237,47 +237,24 @@ class EchogramProcessor(DataProcessor):
     def _plot_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
         self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
         current_settings = settings if settings else {}
-        for i, measurement in enumerate(measurements):
-            t_s, _, amps_norm = self._berechne_metadaten(measurement.data_points, current_settings)
-            t_ms = t_s * 1000
+        
+        try:
+            fs_val = current_settings.get("freqIdSamplFreq", {})
+            fs = float(fs_val) if fs_val else 100000.0
+        except (ValueError, TypeError):
+            fs = 100000.0
             
+        for i, measurement in enumerate(measurements):
             titel_suffix = ""
             if "Depth" in measurement.header:
                 titel_suffix = f" (Tiefe: {measurement.header['Depth']})"
             
-            self.visualisierung.plotte_datenpunkte(
-                t_ms,
-                amps_norm,
+            self.visualisierung.prepare_and_plot(
+                measurement.data_points,
+                fs,
                 titel=f"Echogramm für Modus '{mode_name}'{titel_suffix}",
                 block_index=i
             )
-
-    def _berechne_metadaten(self, amplituden_block: List[int], settings: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        raw_amps = np.array(amplituden_block)
-        num_samples = len(raw_amps)
-
-        if num_samples == 0:
-            return np.array([]), np.array([]), np.array([])
-
-        try:
-            fs_val = settings.get("freqIdSamplFreq", {})
-            fs = float(fs_val) if fs_val else 100000.0
-        except (ValueError, TypeError):
-            fs = 100000.0
-
-        time_axis_s = np.arange(num_samples) / fs
-        sound_speed = 1500.0
-        dist_axis_m = (time_axis_s * sound_speed) / 2
-
-        min_val = raw_amps.min()
-        max_val = raw_amps.max()
-
-        if max_val > min_val:
-            amps_norm = (raw_amps - min_val) / (max_val - min_val)
-        else:
-            amps_norm = np.zeros_like(raw_amps, dtype=float)
-
-        return time_axis_s, dist_axis_m, amps_norm
 
 class BinaryProcessor(DataProcessor):
     """
@@ -361,7 +338,16 @@ class Datenverarbeitung:
              self.logger.debug(f"Datenformat nicht geeignet für CSV-Export: {type(measurement)}")
              return
 
-        filepath = os.path.join(self.run_dir, filename)
+        # Dynamischer Dateiname basierend auf Frequenz und Modus, um "jagged rows" zu vermeiden
+        freq = settings.get("frequency", "unknown")
+        # settings.get("mode_id") ist hier evtl. nicht direkt verfügbar, hängt von Aufrufer ab. 
+        # Wir nutzen frequency als Hauptunterscheidungsmerkmal.
+        
+        dyn_filename = filename
+        if filename == "training_data.csv":
+             dyn_filename = f"training_data_{freq}.csv"
+
+        filepath = os.path.join(self.run_dir, dyn_filename)
         file_exists = os.path.exists(filepath)
 
         header = [

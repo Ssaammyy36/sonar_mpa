@@ -7,7 +7,6 @@ from datetime import datetime
 import config
 
 from logger import get_logger
-from logger import get_logger
 from data_types import Measurement, EchogramMeasurement, NMEAMeasurement, BinaryMeasurement
 
 # --- Interfaces & Strategies ---
@@ -70,7 +69,6 @@ class NMEAProcessor(DataProcessor):
 
 class EchogramProcessor(DataProcessor):
     """Verarbeitet Echogramm-Daten (ASCII)."""
-    """Verarbeitet Echogramm-Daten (ASCII)."""
     def __init__(self):
         super().__init__()
 
@@ -97,8 +95,6 @@ class EchogramProcessor(DataProcessor):
                 ))
 
         if measurements:
-            self.logger.info(f"{len(measurements)} Ping(s) mit insgesamt {sum(len(m.data_points) for m in measurements)} Datenpunkten geparst.")
-            
             self.logger.info(f"{len(measurements)} Ping(s) mit insgesamt {sum(len(m.data_points) for m in measurements)} Datenpunkten geparst.")
         else:
             self.logger.warning("Keine gültigen Datenblöcke im Echogramm gefunden.")

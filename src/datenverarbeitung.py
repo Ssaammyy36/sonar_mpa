@@ -233,8 +233,33 @@ class EchogramProcessor(DataProcessor):
         self.logger.debug(f"Header geparst: {header}")
         return header
 
+<<<<<<< HEAD
 
 
+=======
+    def _plot_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
+        self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
+        current_settings = settings if settings else {}
+        
+        try:
+            fs_val = current_settings.get("freqIdSamplFreq", {})
+            fs = float(fs_val) if fs_val else 100000.0
+        except (ValueError, TypeError):
+            fs = 100000.0
+            
+        for i, measurement in enumerate(measurements):
+            titel_suffix = ""
+            if "Depth" in measurement.header:
+                titel_suffix = f" (Tiefe: {measurement.header['Depth']})"
+            
+            self.visualisierung.prepare_and_plot(
+                measurement.data_points,
+                fs,
+                titel=f"Echogramm für Modus '{mode_name}'{titel_suffix}",
+                block_index=i
+            )
+
+>>>>>>> leo-noll/issue23
 class BinaryProcessor(DataProcessor):
     """
     Verarbeitet Binärdaten (Placeholder für zukünftige Implementierung).
@@ -316,7 +341,16 @@ class Datenverarbeitung:
              self.logger.debug(f"Datenformat nicht geeignet für CSV-Export: {type(measurement)}")
              return
 
-        filepath = os.path.join(self.run_dir, filename)
+        # Dynamischer Dateiname basierend auf Frequenz und Modus, um "jagged rows" zu vermeiden
+        freq = settings.get("frequency", "unknown")
+        # settings.get("mode_id") ist hier evtl. nicht direkt verfügbar, hängt von Aufrufer ab. 
+        # Wir nutzen frequency als Hauptunterscheidungsmerkmal.
+        
+        dyn_filename = filename
+        if filename == "training_data.csv":
+             dyn_filename = f"training_data_{freq}.csv"
+
+        filepath = os.path.join(self.run_dir, dyn_filename)
         file_exists = os.path.exists(filepath)
 
         header = [

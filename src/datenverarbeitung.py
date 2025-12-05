@@ -233,10 +233,6 @@ class EchogramProcessor(DataProcessor):
         self.logger.debug(f"Header geparst: {header}")
         return header
 
-<<<<<<< HEAD
-
-
-=======
     def _plot_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
         self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
         current_settings = settings if settings else {}
@@ -259,7 +255,6 @@ class EchogramProcessor(DataProcessor):
                 block_index=i
             )
 
->>>>>>> leo-noll/issue23
 class BinaryProcessor(DataProcessor):
     """
     Verarbeitet Binärdaten (Placeholder für zukünftige Implementierung).

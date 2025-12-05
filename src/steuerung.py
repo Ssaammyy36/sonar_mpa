@@ -38,7 +38,7 @@ class Steuerung:
 
         self.run_tests()
 
-    def run_single_test(self, mode_id: str, frequency: str, class_name: str):
+    def run_single_test(self, mode_id: str, frequency: str, class_name: str, test_number: int):
         """
         Führt einen einzelnen, klar definierten Test basierend auf der Konfiguration durch.
 
@@ -93,7 +93,7 @@ class Steuerung:
 
         # 5. Visualisieren
         if config.LOGGING_CONFIG["plot_echograms"] and data_packages:
-            self.visualisierung.create_plots_from_measurements(data_packages, mode_name, mode_settings)
+            self.visualisierung.create_plots_from_measurements(data_packages, mode_name, mode_settings, test_number)
 
         # 6. Daten in CSV schreiben
         self.datenverarbeitung.append_ping_to_csv(data_packages=data_packages, settings=mode_settings)
@@ -111,10 +111,10 @@ class Steuerung:
         if self.sonar.verbinden():
             self.logger.info("Sonar erfolgreich verbunden.")
 
-            for test in self.geplante_tests:
+            for i, test in enumerate(self.geplante_tests):
 
                 # Aktueller Test i
-                self.run_single_test(mode_id=test.mode_id, frequency=test.frequency, class_name=test.class_name)
+                self.run_single_test(mode_id=test.mode_id, frequency=test.frequency, class_name=test.class_name, test_number=i)
 
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")

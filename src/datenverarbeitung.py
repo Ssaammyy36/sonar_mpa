@@ -233,28 +233,6 @@ class EchogramProcessor(DataProcessor):
         self.logger.debug(f"Header geparst: {header}")
         return header
 
-    def _plot_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
-        self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
-        current_settings = settings if settings else {}
-        
-        try:
-            fs_val = current_settings.get("freqIdSamplFreq", {})
-            fs = float(fs_val) if fs_val else 100000.0
-        except (ValueError, TypeError):
-            fs = 100000.0
-            
-        for i, measurement in enumerate(measurements):
-            titel_suffix = ""
-            if "Depth" in measurement.header:
-                titel_suffix = f" (Tiefe: {measurement.header['Depth']})"
-            
-            self.visualisierung.prepare_and_plot(
-                measurement.data_points,
-                fs,
-                titel=f"Echogramm für Modus '{mode_name}'{titel_suffix}",
-                block_index=i
-            )
-
 class BinaryProcessor(DataProcessor):
     """
     Verarbeitet Binärdaten (Placeholder für zukünftige Implementierung).

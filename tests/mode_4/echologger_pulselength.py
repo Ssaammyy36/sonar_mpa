@@ -1,7 +1,12 @@
-# Copyright (c) EofE Ultrasonics Co., Ltd., 2024
-from echosndr import SingleEchosounder
-from echosndr import DualEchosounder
+from src.logger import get_logger
+from src.echosounderapi.echosndr import DualEchosounder
 import time
+import sys
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 COMPORT: str = "COM5"
 BAUDRATE: int = 115200
 logger = get_logger(__name__)

@@ -53,7 +53,7 @@ class Visualisierung:
         min_db = -80.0
         return np.clip(amps_db, min_db, 0.0)
 
-    def create_plots_from_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
+    def create_plots_from_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict, test_number: int):
         """
         Public API: Erstellt Plots für eine Liste von Messungen (Batch-Verarbeitung).
         
@@ -66,21 +66,17 @@ class Visualisierung:
         
         # Sampling Frequenz ermitteln
         try:
-            val = settings.get("freqIdSamplFreq", {})
-            fs = float(val) if val else 100000.0
+            val = settings.get("IdSamplFreq", {})
+            fs = float(val) 
         except (ValueError, TypeError):
             fs = 100000.0
             
         for i, m in enumerate(measurements):
             # Titel generieren
-            depth_info = ""
-            if "Depth" in m.header:
-                depth_info = f" (Tiefe: {m.header['Depth']})"
-            title = f"Echogramm Mode '{mode_name}'{depth_info}"
+            title = f"Echogramm Mode: {mode_name}, Frequenz: {settings.get("frequency")}, Klasse: {settings.get("class_name")} Tiefe: {m.header['Altitude']})"
             
             # Dateiname generieren
-            ts_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"echogram_{ts_str}_block_{i+1}.png"
+            filename = f"echogram_messung{test_number+1}_ping_{i+1}.png"
             
             # Plotten
             self._render_and_save_figure(m.data_points, fs, title, filename, block_index=i+1)

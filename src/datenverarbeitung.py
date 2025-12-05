@@ -340,7 +340,7 @@ class Datenverarbeitung:
             settings.get("class_name"),
             settings.get("frequency"),
             nmea_depth, # Hier wird der Wert aus dem Header eingetragen
-            settings.get("IdTxLength"),
+            settings.get("IdTxLengthH") if settings.get("frequency") == "high" else settings.get("IdTxLengthL", settings.get("IdTxLength")),
             settings.get("IdSamplFreq")
         ]
         row_data.extend(daten_block)

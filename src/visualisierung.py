@@ -142,3 +142,27 @@ class Visualisierung:
                 f"Fehler beim Speichern des Plots für Block {block_index + 1}: {e}")
         finally:
             plt.close(fig)
+
+    def plotte_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
+        """
+        Iteriert über eine Liste von Messungen und erstellt Plots.
+        """
+        self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
+        
+        try:
+            fs_val = settings.get("freqIdSamplFreq", {})
+            fs = float(fs_val) if fs_val else 100000.0
+        except (ValueError, TypeError):
+            fs = 100000.0
+
+        for i, measurement in enumerate(measurements):
+             titel_suffix = ""
+             if "Depth" in measurement.header:
+                 titel_suffix = f" (Tiefe: {measurement.header['Depth']})"
+             
+             self.prepare_and_plot(
+                 measurement.data_points,
+                 fs,
+                 titel=f"Echogramm für Modus '{mode_name}'{titel_suffix}",
+                 block_index=i
+             )

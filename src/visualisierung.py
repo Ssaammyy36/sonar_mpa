@@ -73,7 +73,7 @@ class Visualisierung:
             
         for i, m in enumerate(measurements):
             # Titel generieren
-            title = f"Echogramm Mode: {mode_name}, Frequenz: {settings.get("frequency")}, Klasse: {settings.get("class_name")} Tiefe: {m.header['Altitude']})"
+            title = f"Echogramm \nMode: {mode_name}, Frequenz: {settings.get("frequency")}, Klasse: {settings.get("class_name")}, Tiefe: {m.header['Altitude']}, Pulsdauer: {m.header['PulseLength,uks']}"
             
             # Dateiname generieren
             filename = f"echogram_messung{test_number+1}_ping_{i+1}.png"

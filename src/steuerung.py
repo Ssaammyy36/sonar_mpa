@@ -93,7 +93,7 @@ class Steuerung:
 
         # 5. Visualisieren
         if config.LOGGING_CONFIG["plot_echograms"] and data_packages:
-            self.visualisierung.plotte_measurements(data_packages, mode_name, mode_settings)
+            self.visualisierung.create_plots_from_measurements(data_packages, mode_name, mode_settings)
 
         # 6. Daten in CSV schreiben
         self.datenverarbeitung.append_ping_to_csv(data_packages=data_packages, settings=mode_settings)

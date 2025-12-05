@@ -24,145 +24,113 @@ class Visualisierung:
         self.run_dir = run_dir
 
     @staticmethod
-    def scale_amplitudes(data_points: list, sampling_freq: float) -> tuple:
+    def calculate_db_from_raw(data_points: List[int], max_adc: int = 4095) -> np.ndarray:
         """
-        Normalisiert die Amplitudenwerte und berechnet die Zeit- und Entfernungsachsen in dB.
+        Berechnet die dBFS-Werte für eine Liste von Rohdaten.
         
         Args:
-            data_points (list): Liste der Amplitudenwerte.
-            sampling_freq (float): Abtastfrequenz in Hz.
+            data_points: Die rohen Amplitudenwerte (0 bis max_adc).
+            max_adc: Der maximale ADC-Wert (Referenz für 0 dB).
             
         Returns:
-            tuple: (time_axis_s, dist_axis_m, amps_dB)
+            np.ndarray: Die Amplituden in dBFS (geclippt bei -80 dB).
         """
         raw_amps = np.array(data_points)
-        num_samples = len(raw_amps)
-
-        if num_samples == 0:
-            return np.array([]), np.array([]), np.array([])
-
-        time_axis_s = np.arange(num_samples) / sampling_freq
-        # Schallgeschwindigkeit im Wasser ca. 1500 m/s
-        sound_speed = 1500.0 
-        dist_axis_m = (time_axis_s * sound_speed) / 2
-
-        # Absolute Skalierung (dBFS) für 12-Bit ADC (0..4095)
-        max_adc_val = 4095.0
-        amps_norm = raw_amps / max_adc_val
-
-        # Umrechnung in dB: 20 * log10(amplitude)
-        # Standard: Wir definieren einen "Noise Floor" bzw. dynamischen Bereich.
-        # Alles unter -80dB wird als Stille betrachtet.
+        if len(raw_amps) == 0:
+            return np.array([])
+            
+        # 1. Normalisierung auf 0..1 (Relativ zu Full Scale)
+        amps_norm = raw_amps / float(max_adc)
         
-        # 1. Epsilon addieren oder Clippen, um log(0) zu verhindern
+        # 2. Logarithmierung (dB)
+        # Epsilon addieren/clippen gegen log(0)
         epsilon = 1e-9
         amps_norm = np.clip(amps_norm, epsilon, 1.0)
+        amps_db = 20 * np.log10(amps_norm)
         
-        # 2. dB berechnen
-        amps_dB = 20 * np.log10(amps_norm)
-        
-        # 3. Auf dynamischen Bereich begrenzen (z.B. -80dB bis 0dB)
-        min_dB = -80.0
-        amps_dB = np.clip(amps_dB, min_dB, 0.0)
+        # 3. Noise Floor Clipping
+        # Alles unter -80 dB wird abgeschnitten
+        min_db = -80.0
+        return np.clip(amps_db, min_db, 0.0)
 
-        return time_axis_s, dist_axis_m, amps_dB
-
-    def prepare_and_plot(self, data_points: list, sampling_freq: float, title: str, block_index: int):
+    def create_plots_from_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
         """
-        Bereitet die Daten vor (Normalisierung + dB Konvertierung) und erstellt den Plot.
+        Public API: Erstellt Plots für eine Liste von Messungen (Batch-Verarbeitung).
         
         Args:
-            data_points (list): Rohdaten.
-            sampling_freq (float): Abtastfrequenz.
-            title (str): Plot-Titel.
-            block_index (int): Index für Dateinamen.
+            measurements: Liste der Echogramm-Objekte.
+            mode_name: Name des aktuellen Modus (für Titel).
+            settings: Einstellungen (enthält u.a. Sampling Rate).
         """
-        t_s, _, amps_dB = self.scale_amplitudes(data_points, sampling_freq)
-        t_ms = t_s * 1000
+        self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen (Batch)...")
         
-        self.plotte_datenpunkte(t_ms, amps_dB, title, block_index)
-
-    def plotte_datenpunkte(self, t_ms: np.ndarray, amps_dB: np.ndarray, titel: str, block_index: int):
-        """
-        Erstellt ein Liniendiagramm für einen einzelnen Echogramm-Datenblock und speichert es.
-
-        Args:
-            t_ms (np.ndarray): Zeitachse in Millisekunden.
-            amps_dB (np.ndarray): Normierte Amplitudenwerte in dB.
-            titel (str): Der Titel für den Plot.
-            block_index (int): Der Index des Datenblocks (für den Dateinamen).
-        """
-        if len(amps_dB) == 0:
-            self.logger.warning(
-                f"Datenblock {block_index + 1} enthält keine Amplituden zum Plotten.")
-            return
-
-        # --- PLOT VORBEREITEN ---
-        fig, ax = plt.subplots(figsize=(12, 6))
-
-        ax.plot(t_ms, amps_dB,
-                label=f'Normierte Amplituden (Block {block_index + 1})')
-
-        # Achsenbeschriftungen
-        ax.set_title(f"{titel} - Block {block_index + 1}")
-        ax.set_xlabel("Zeit [ms]")
-        ax.set_ylabel("Normierte Intensität [dB]")
-        ax.grid(True)
-
-        # Ticks
-        tick_spacing_ms = 0.5
-        max_ms = t_ms[-1] if t_ms.size > 0 else 0
-        ticks_ms = np.arange(0, max_ms + tick_spacing_ms, tick_spacing_ms)
-        ax.set_xticks(ticks_ms)
-        ax.set_xticklabels([f"{t:.1f}" for t in ticks_ms])
-
-        # Zweite X-Achse für die Entfernung
-        def ms_to_m(val_ms):
-            return (val_ms / 1000.0) * 1500.0 / 2.0
-
-        def m_to_ms(val_m):
-            return (val_m * 2.0 / 1500.0) * 1000.0
-
-        secax = ax.secondary_xaxis('top', functions=(ms_to_m, m_to_ms))
-        secax.set_xlabel("Entfernung [m] (v=1500m/s)")
-
-        plt.tight_layout()
-
-        # SPEICHERUNG
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"echogram_{timestamp}_block_{block_index + 1}.png"
-        save_path = os.path.join(self.run_dir, filename)
-
+        # Sampling Frequenz ermitteln
         try:
-            plt.savefig(save_path)
-            self.logger.info(
-                f"Plot für Block {block_index + 1} erfolgreich gespeichert: {save_path}")
-        except Exception as e:
-            self.logger.error(
-                f"Fehler beim Speichern des Plots für Block {block_index + 1}: {e}")
-        finally:
-            plt.close(fig)
-
-    def plotte_measurements(self, measurements: List[EchogramMeasurement], mode_name: str, settings: dict):
-        """
-        Iteriert über eine Liste von Messungen und erstellt Plots.
-        """
-        self.logger.info(f"Erstelle Plots für {len(measurements)} Messungen...")
-        
-        try:
-            fs_val = settings.get("freqIdSamplFreq", {})
-            fs = float(fs_val) if fs_val else 100000.0
+            val = settings.get("freqIdSamplFreq", {})
+            fs = float(val) if val else 100000.0
         except (ValueError, TypeError):
             fs = 100000.0
+            
+        for i, m in enumerate(measurements):
+            # Titel generieren
+            depth_info = ""
+            if "Depth" in m.header:
+                depth_info = f" (Tiefe: {m.header['Depth']})"
+            title = f"Echogramm Mode '{mode_name}'{depth_info}"
+            
+            # Dateiname generieren
+            ts_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"echogram_{ts_str}_block_{i+1}.png"
+            
+            # Plotten
+            self._render_and_save_figure(m.data_points, fs, title, filename, block_index=i+1)
 
-        for i, measurement in enumerate(measurements):
-             titel_suffix = ""
-             if "Depth" in measurement.header:
-                 titel_suffix = f" (Tiefe: {measurement.header['Depth']})"
-             
-             self.prepare_and_plot(
-                 measurement.data_points,
-                 fs,
-                 titel=f"Echogramm für Modus '{mode_name}'{titel_suffix}",
-                 block_index=i
-             )
+
+    def _render_and_save_figure(self, raw_data: List[int], fs: float, title: str, filename: str, block_index: int):
+        """
+        Interne Methode: Führt die Berechnung durch, erstellt den Plot und speichert ihn.
+        """
+        if not raw_data:
+            self.logger.warning(f"Keine Daten für Plot '{filename}'.")
+            return
+
+        # 1. Daten berechnen
+        amps_db = self.calculate_db_from_raw(raw_data)
+        num_samples = len(amps_db)
+        
+        # 2. Zeitachse berechnen
+        time_axis_s = np.arange(num_samples) / fs
+        time_axis_ms = time_axis_s * 1000.0
+        
+        # 3. Plotten
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        ax.plot(time_axis_ms, amps_db, label=f'Block {block_index}')
+        
+        ax.set_title(title)
+        ax.set_xlabel("Zeit [ms]")
+        ax.set_ylabel("Amplitude [dBFS]")
+        ax.set_ylim(-85, 5) # Fixer Bereich für bessere Vergleichbarkeit (+5 für Margin)
+        ax.grid(True)
+        
+        # Sekundäre X-Achse (Entfernung)
+        # v = 1500 m/s
+        def ms_to_m(t_ms):
+            return (t_ms / 1000.0) * 1500.0 / 2.0
+        def m_to_ms(d_m):
+            return (d_m * 2.0 / 1500.0) * 1000.0
+            
+        secax = ax.secondary_xaxis('top', functions=(ms_to_m, m_to_ms))
+        secax.set_xlabel("Entfernung [m] (v=1500 m/s)")
+        
+        plt.tight_layout()
+        
+        # 4. Speichern
+        save_path = os.path.join(self.run_dir, filename)
+        try:
+            plt.savefig(save_path)
+            self.logger.debug(f"Plot gespeichert: {save_path}")
+        except Exception as e:
+            self.logger.error(f"Fehler beim Speichern von {save_path}: {e}")
+        finally:
+            plt.close(fig)

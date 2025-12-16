@@ -22,4 +22,6 @@ logs/*
 #src/config.py
 #src/main.py
 
-# Data 
+# Venv
+
+.venv/*

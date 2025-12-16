@@ -23,3 +23,6 @@ logs/*
 #src/main.py
 
 # Data 
+
+# Virtual Environment
+.venv/

@@ -18,9 +18,7 @@ FREQUENCIES = {
 CLASSES = {
     "Gravel",
     "Sand",
-    "Soil",
-    "Vertical tub",
-    "Horizontal tub",
+    "Stones",
     "Test"
 }
 
@@ -56,7 +54,7 @@ MODES = {
                 "IdRange": "3000",
                 "IdInterval": "1",
                 "IdDeadzone": "200",
-                "IdTxLengthL": "20",
+                "IdTxLengthL": "200",
                 "IdTxPower": "0",
                 "IdGain": "0",
                 "read_timeout": 2.0
@@ -66,8 +64,8 @@ MODES = {
                 "IdRange": "3000",
                 "IdInterval": "1",
                 "IdDeadzone": "200",
-                "IdTxLengthH": "40",
-                "IdTxPower": "0",
+                "IdTxLengthH": "50",
+                "IdTxPower": "-48",
                 "IdGain": "0",
                 "read_timeout": 2.0
             }

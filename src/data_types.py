@@ -6,7 +6,7 @@ from datetime import datetime
 class TestSzenario:
     """Definiert ein geplantes Testszenario."""
     mode_id: str
-    class_name: str
+    class_name: Optional[str] = None
     frequency: str = "low"
 
 @dataclass

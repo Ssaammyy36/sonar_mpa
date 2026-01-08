@@ -284,6 +284,14 @@ class Datenverarbeitung:
     def append_ping_to_csv(self, data_packages: List[Measurement], settings: dict, filename: str = "training_data.csv"):
         """
         Hängt den ersten Datenblock (Ping) an eine CSV-Datei an.
+
+        Args:
+            data_packages: Liste von Messdatenpaketen
+            settings: Einstellungen für den Modus
+            filename: Name der CSV-Datei
+            
+        Returns:
+            None
         """
         if not data_packages:
             self.logger.warning("Keine Datenblöcke zum Schreiben in CSV vorhanden.")
@@ -315,7 +323,7 @@ class Datenverarbeitung:
 
         header = [
             "Timestamp", "class_name", "Frequency", "NMEA_Depth_m",
-            "PulseLength_us", "Sampling_Freq_Hz"
+            "PulseLength_us", "Sampling_Freq_Hz", "Prediction"
         ]
         header.extend([f"S_{i}" for i in range(len(daten_block))])
 
@@ -324,11 +332,12 @@ class Datenverarbeitung:
 
         row_data = [
             datetime.now().isoformat(),
-            settings.get("class_name"),
+            settings.get("class_name") or "N/A",
             settings.get("frequency"),
             nmea_depth, # Hier wird der Wert aus dem Header eingetragen
             settings.get("IdTxLengthH") if settings.get("frequency") == "high" else settings.get("IdTxLengthL", settings.get("IdTxLength")),
-            settings.get("IdSamplFreq")
+            settings.get("IdSamplFreq"),
+            settings.get("ml_prediction", "N/A")
         ]
         row_data.extend(daten_block)
 

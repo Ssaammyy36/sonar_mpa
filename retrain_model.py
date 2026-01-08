@@ -87,7 +87,7 @@ def retrain():
     
     print("Training complete.")
     
-    output_path = r'c:\Users\samso\Documents\00 Uni\Semester 9\sonar_mpa\models\sonar_model.pkl'
+    output_path = r'c:\Users\samso\Documents\00 Uni\Semester 9\sonar_mpa\models\sonar_model_v2.pkl'
     print(f"Saving model to {output_path}...")
     
     # Ensure directory exists

@@ -32,7 +32,7 @@ LOGGING_CONFIG = {
 # Einstellungen für die KI-Klassifizierung
 ANALYSIS_CONFIG = {
     "enable_classification": True, # Auf True setzen, um Klassifizierung zu aktivieren
-    "model_path": "models/sonar_model.pkl", # Pfad zum Modell
+    "model_path": "models/sonar_model_v2.pkl", # Pfad zum Modell
     "model_type": "pickle" # 'pickle', 'onnx', oder 'mat'
 }
 

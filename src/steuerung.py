@@ -7,6 +7,8 @@ from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
 from visualisierung import Visualisierung
 from data_types import TestSzenario
+from data_types import TestSzenario
+from classifier import SonarClassifier
 import config
 
 
@@ -34,6 +36,7 @@ class Steuerung:
         self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
         self.visualisierung = Visualisierung(run_dir=self.run_dir)
+        self.classifier = SonarClassifier()
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
         self.run_tests()
@@ -89,7 +92,14 @@ class Steuerung:
             mode_name=mode_name,
             settings=mode_settings,
         )
+
         self.logger.info(f"Test '{mode_name}' beendet")
+
+        # 4b. Optional: Klassifizieren
+        if config.ANALYSIS_CONFIG["enable_classification"]:
+            prediction = self.classifier.predict(data_packages, frequency)
+            if prediction:
+                mode_settings["ml_prediction"] = prediction
 
         # 5. Visualisieren
         if config.LOGGING_CONFIG["plot_echograms"] and data_packages:

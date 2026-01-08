@@ -47,7 +47,7 @@ class SonarClassifier:
         except Exception as e:
             self.logger.error(f"Fehler beim Laden des Modells: {e}")
 
-    def predict(self, measurements: List[Measurement]) -> Optional[str]:
+    def predict(self, measurements: List[Measurement], frequency: str) -> Optional[str]:
         """
         Führt eine Klassifizierung auf den übergebenen Messdaten durch.
         """
@@ -64,14 +64,20 @@ class SonarClassifier:
             self.logger.warning("Klassifizierung nur für Echogramm-Daten unterstützt.")
             return None
 
-        # Feature Extraction: Hier müssen wir sicherstellen, dass die Daten 
-        # genau so aufbereitet werden, wie das Modell es erwartet.
-        # Aktuell nehmen wir die Rohdaten (data_points) als Features.
-        features = np.array(measurement.data_points).reshape(1, -1)
+        # Feature Extraction
+        # 1. Amplituden (S_0 ... S_n)
+        amplitudes = np.array(measurement.data_points)
+        
+        # 2. Frequenz (low=0, high=1)
+        freq_code = 0 if frequency == "low" else 1
+        
+        # Zusammenfügen: [S_0, ..., S_n, Frequency_Code]
+        features = np.append(amplitudes, freq_code).reshape(1, -1)
         
         try:
             prediction = None
             if self.config["model_type"] == "pickle":
+                # Sklearn Modelle erwarten (n_samples, n_features)
                 prediction = self.model.predict(features)[0]
             
             elif self.config["model_type"] == "onnx":

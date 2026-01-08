@@ -97,7 +97,7 @@ class Steuerung:
 
         # 4b. Optional: Klassifizieren
         if config.ANALYSIS_CONFIG["enable_classification"]:
-            prediction = self.classifier.predict(data_packages)
+            prediction = self.classifier.predict(data_packages, frequency)
             if prediction:
                 mode_settings["ml_prediction"] = prediction
 

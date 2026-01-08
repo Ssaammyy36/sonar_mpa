@@ -24,8 +24,17 @@ class SonarClassifier:
         model_type = self.config["model_type"]
 
         if not os.path.exists(model_path):
-            self.logger.error(f"Modell-Datei nicht gefunden: {model_path}")
-            return
+            # Versuche absoluten Pfad relativ zum Projekt-Root zu finden
+            # Annahme: classifier.py liegt in src/, also ist Projekt-Root ein Level höher
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            abs_model_path = os.path.join(base_dir, model_path)
+            
+            if os.path.exists(abs_model_path):
+                model_path = abs_model_path
+                self.logger.info(f"Modell-Pfad korrigiert auf: {model_path}")
+            else:
+                self.logger.error(f"Modell-Datei nicht gefunden: {model_path} (CWD) oder {abs_model_path}")
+                return
 
         try:
             if model_type == "pickle":

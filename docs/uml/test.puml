@@ -1,0 +1,8 @@
+@startuml
+title Mein erstes Diagramm
+
+Alice -> Bob: Hallo Bob!
+Bob --> Alice: Hi Alice!
+
+note right of Alice: Dies ist ein Sequenzdiagramm
+@enduml

@@ -26,8 +26,8 @@ pip install pylint
 
 **Instalation**
 
-pip install py2puml
+`pip install py2puml`
 
 **Anwendung**
 
-py2puml src/ mein_modul > classes.puml
+`py2puml src/ mein_modul > docs/uml/classes.puml`

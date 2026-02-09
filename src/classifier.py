@@ -1,5 +1,6 @@
 import os
 import pickle
+import joblib
 import numpy as np
 from typing import Optional, List, Tuple
 import config
@@ -36,9 +37,8 @@ class SonarClassifier:
 
         try:
             if model_type == "pickle":
-                with open(model_path, 'rb') as f:
-                    self.model = pickle.load(f)
-                self.logger.info("Pickle-Modell erfolgreich geladen.")
+                self.model = joblib.load(model_path)
+                self.logger.info("Pickle-Modell erfolgreich mit Joblib geladen.")
             
             elif model_type == "onnx":
                 import onnxruntime as ort

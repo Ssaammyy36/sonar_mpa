@@ -19,4 +19,5 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"Ein unerwarteter, kritischer Fehler ist aufgetreten: {e}", file=sys.stderr)
+
         sys.exit(1)

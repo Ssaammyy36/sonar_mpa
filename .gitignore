@@ -26,3 +26,4 @@ logs/*
 
 # Virtual Environment
 .venv/
+venv/

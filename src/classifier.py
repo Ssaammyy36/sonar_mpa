@@ -15,15 +15,20 @@ class SonarClassifier:
         self.logger = get_logger(self.__class__.__name__)
         self.config = config.ANALYSIS_CONFIG
         self.model = None
+        self.scaler = None
+        self.pca = None
         
         if self.config["enable_classification"]:
             self.load_model()
 
     def load_model(self):
         """Lädt das Modell basierend auf der Konfiguration."""
+
+        # Config Data holen
         model_path = self.config["model_path"]
         model_type = self.config["model_type"]
 
+        # Pfad prüfen
         if not os.path.exists(model_path):
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             abs_model_path = os.path.join(base_dir, model_path)
@@ -35,10 +40,20 @@ class SonarClassifier:
                 self.logger.error(f"Modell-Datei nicht gefunden: {model_path}")
                 return
 
+        # Modell laden (+ Scaler und PCA)
         try:
             if model_type == "pickle":
-                self.model = joblib.load(model_path)
-                self.logger.info("Pickle-Modell erfolgreich mit Joblib geladen.")
+                data = joblib.load(model_path)
+                if isinstance(data, dict):
+                    self.model = data.get("model")
+                    self.scaler = data.get("scaler")
+                    self.pca = data.get("pca")
+                    self.logger.info("Modell, Scaler und PCA erfolgreich geladen.")
+                else:
+                    self.model = data
+                    self.scaler = None
+                    self.pca = None
+                    self.logger.warning("Altes Modellformat geladen (ohne Scaler/PCA).")
             
             elif model_type == "onnx":
                 import onnxruntime as ort
@@ -155,13 +170,28 @@ class SonarClassifier:
 
         # Concatenate: [stats_hf, stats_lf, win_hf, win_lf]
         # Shape: 4 + 4 + 155 + 155 = 318 Features
-        features = np.concatenate([stats_hf, stats_lf, win_hf, win_lf]).reshape(1, -1)
-
+        # Original: features = np.concatenate([stats_hf, stats_lf, win_hf, win_lf]).reshape(1, -1)
+        
+        # New Logic: Split into Stats and Wave, Scale, PCA, Stack
+        stats = np.concatenate([stats_hf, stats_lf]) # 8 features
+        wave = np.concatenate([win_hf, win_lf])      # 310 features
+        
         try:
             prediction = None
             if self.config["model_type"] == "pickle":
+                if self.scaler and self.pca:
+                    # Apply transformation
+                    wave_std = self.scaler.transform(wave.reshape(1, -1))
+                    wave_pca = self.pca.transform(wave_std)
+                    features = np.hstack([stats.reshape(1, -1), wave_pca]) # 10 features
+                else:
+                     features = np.concatenate([stats, wave]).reshape(1, -1)
+
                 prediction = self.model.predict(features)[0]
             elif self.config["model_type"] == "onnx":
+                # ONNX support needs update if ONNX model is used (assumed same pipeline)
+                # For now keeping legacy logic for ONNX
+                features = np.concatenate([stats, wave]).reshape(1, -1)
                 input_name = self.model.get_inputs()[0].name
                 prediction = self.model.run(None, {input_name: features.astype(np.float32)})[0][0]
 

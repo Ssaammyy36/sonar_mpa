@@ -11,16 +11,6 @@ if __name__ == "__main__":
         # --- HIER DIE GEWÜNSCHTEN TESTS DEFINIEREN ---
         geplante_tests = [
             TestSzenario(mode_id="4", frequency="low", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="high", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="low", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="high", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="low", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="high", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="low", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="high", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="low", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="high", class_name="Stones"),
-            TestSzenario(mode_id="4", frequency="low", class_name="Stones"),
             TestSzenario(mode_id="4", frequency="high", class_name="Stones")
         ]
 

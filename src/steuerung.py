@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from pathlib import Path
 from datetime import datetime
 
@@ -6,8 +6,7 @@ from logger import get_logger, setup_logging
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
 from visualisierung import Visualisierung
-from data_types import TestSzenario
-from data_types import TestSzenario
+from data_types import TestSzenario, Measurement
 from classifier import SonarClassifier
 import config
 
@@ -41,7 +40,7 @@ class Steuerung:
 
         self.run_tests()
 
-    def run_single_test(self, mode_id: str, frequency: str, class_name: str, test_number: int):
+    def run_single_test(self, mode_id: str, frequency: str, class_name: str, test_number: int, save_result: bool = True) -> Tuple[List[Measurement], Dict]:
         """
         Führt einen einzelnen, klar definierten Test basierend auf der Konfiguration durch.
 
@@ -49,16 +48,20 @@ class Steuerung:
             mode_id: Die ID des Testmodus (z.B. "3", "4", "100").
             frequency: Die zu verwendende Frequenz ("low" oder "high").
             class_name: Die Klasse des Tests (z.B. "Test" oder "Gravel").
+            save_result: Ob das Ergebnis sofort in die CSV geschrieben werden soll.
+        
+        Returns:
+            Tuple[List[Measurement], Dict]: Die gemessenen Daten und die verwendeten Einstellungen.
         """
         # 1. Konfiguration laden
         if class_name and class_name not in config.CLASSES:
             self.logger.error(f"Warnung: Unbekannte Klasse '{class_name}'. Erlaubt sind: {config.CLASSES}")
-            return
+            return [], {}
 
-        mode_config = config.MODES.get(mode_id)  # 2,3,4,100,101
+        mode_config = config.MODES.get(mode_id)
         if not mode_config:
             self.logger.error(f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
-            return
+            return [], {}
 
         mode_name = mode_config["name"]
         output_mode_id = mode_config["output_mode_id"]
@@ -74,7 +77,7 @@ class Steuerung:
         self.sonar.konfigurieren(
             output_mode=output_mode_id,
             frequency=frequency,
-            settings=mode_settings  # Übergibt die spezifischen Einstellungen
+            settings=mode_settings
         )
 
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
@@ -83,7 +86,7 @@ class Steuerung:
         
         if not sensor_daten:
             self.logger.error(f"Keine Daten für Test {mode_name} empfangen!")
-            return
+            return [], mode_settings
 
         # 4. Daten verarbeiten
         data_packages = self.datenverarbeitung.verarbeite_daten(
@@ -95,22 +98,19 @@ class Steuerung:
 
         self.logger.info(f"Test '{mode_name}' beendet")
 
-        # 4b. Optional: Klassifizieren
-        if config.ANALYSIS_CONFIG["enable_classification"]:
-            prediction = self.classifier.predict(data_packages, frequency)
-            if prediction:
-                mode_settings["ml_prediction"] = prediction
-
-        # 5. Visualisieren
+        # 5. Visualisieren (immer sofort, gutes Feedback)
         if config.LOGGING_CONFIG["plot_echograms"] and data_packages:
             self.visualisierung.create_plots_from_measurements([data_packages[0]], mode_name, mode_settings, test_number)
 
-        # 6. Daten in CSV schreiben
-        self.datenverarbeitung.append_ping_to_csv(data_packages=data_packages, settings=mode_settings)
+        # 6. Daten in CSV schreiben (Optional, falls später mit Prediction gespeichert werden soll)
+        if save_result:
+            self.datenverarbeitung.append_ping_to_csv(data_packages=data_packages, settings=mode_settings)
+
+        return data_packages, mode_settings
 
     def run_tests(self):
         """
-        Führt eine Liste von Tests nacheinander aus.
+        Führt eine Liste von Tests nacheinander (paarweise) aus.
         """
         self.logger.info(f"--- Sonar-Anwendung wird gestartet, {len(self.geplante_tests)} Test(s) geplant. ---")
 
@@ -121,10 +121,17 @@ class Steuerung:
         if self.sonar.verbinden():
             self.logger.info("Sonar erfolgreich verbunden.")
 
-            for i, test in enumerate(self.geplante_tests):
+            # Iteriere in 2er Schritten durch die Liste
+            for i in range(0, len(self.geplante_tests), 2):
+                # Prüfen ob ein Paar vollständig ist
+                if i + 1 >= len(self.geplante_tests):
+                    self.logger.warning(f"Letzter Test {self.geplante_tests[i]} hat keinen Partner. Wird nicht ausgeführt.")
+                    continue
 
-                # Aktueller Test i
-                self.run_single_test(mode_id=test.mode_id, frequency=test.frequency, class_name=test.class_name, test_number=i)
+                test1 = self.geplante_tests[i]
+                test2 = self.geplante_tests[i+1]
+
+                self.run_test_pair(test1, test2, start_index=i)
 
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
@@ -132,3 +139,48 @@ class Steuerung:
             self.logger.error("Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
 
         self.logger.info("Alle geplanten Tests abgeschlossen. Sonar-Anwendung beendet.")
+
+    def run_test_pair(self, test1: TestSzenario, test2: TestSzenario, start_index: int):
+        """
+        Führt zwei Tests nacheinander aus, kombiniert die Daten für die KI-Klassifizierung
+        und speichert die Ergebnisse.
+        """
+        self.logger.info(f"--- Führe Test-Paar aus: Index {start_index} & {start_index+1} ---")
+
+        # 1. Messungen durchführen (ohne sofort in CSV zu speichern)     
+        data1, settings1 = self.run_single_test(test1.mode_id, test1.frequency, test1.class_name, start_index, save_result=False)
+        data2, settings2 = self.run_single_test(test2.mode_id, test2.frequency, test2.class_name, start_index + 1, save_result=False)
+
+        if not data1 or not data2:
+            self.logger.error("Fehler: Eine der Messungen im Paar war fehlerhaft. Daten werden ohne KI-Prediction gespeichert.")
+            if data1: self.datenverarbeitung.append_ping_to_csv(data1, settings1)
+            if data2: self.datenverarbeitung.append_ping_to_csv(data2, settings2)
+            return
+
+        # 2. Daten zuordnen (Low/High)
+        data_low, data_high = None, None
+        
+        if settings1.get("frequency") == "low":
+            data_low = data1
+        elif settings1.get("frequency") == "high":
+            data_high = data1
+            
+        if settings2.get("frequency") == "low":
+            data_low = data2
+        elif settings2.get("frequency") == "high":
+            data_high = data2
+
+        prediction = None
+        # 3. KI-Klassifizierung (nur wenn beide Frequenzen vorhanden sind)
+        if data_low and data_high and config.ANALYSIS_CONFIG["enable_classification"]:
+            self.logger.info("Starte KI-Klassifizierung für LF/HF Paar...")
+            prediction = self.classifier.predict_paired(data_low, data_high)
+            
+            if prediction:
+                settings1["ml_prediction"] = prediction
+                settings2["ml_prediction"] = prediction
+                self.logger.info(f"Klassifizierungsergebnis für Paar: {prediction}")
+
+        # 4. Ergebnisse speichern
+        self.datenverarbeitung.append_ping_to_csv(data1, settings1)
+        self.datenverarbeitung.append_ping_to_csv(data2, settings2)

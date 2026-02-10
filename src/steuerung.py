@@ -34,23 +34,19 @@ class Steuerung:
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
         self.visualisierung = Visualisierung(run_dir=self.run_dir)
         
-        # AI Modell laden
         try:
-             ai_config = config.ANALYSIS_CONFIG
-             if ai_config.get("enable_classification", False):
+            # AI Modell laden
+            ai_config = config.ANALYSIS_CONFIG
+            if ai_config.get("enable_classification", False):
                  active_id = ai_config.get("active_model_id")
-                 if active_id and active_id in ai_config.get("models", {}):
-                     model_conf = ai_config["models"][active_id]
-                     self.classifier = create_ai_model(model_conf["type"], model_conf.get("settings", {}))
-                     self.classifier.load(model_conf["model_path"])
-                 else:
-                     self.logger.warning(f"Kein aktives AI Modell konfiguriert oder ID '{active_id}' ungültig.")
-                     self.classifier = None
-             else:
+                 model_conf = ai_config["models"][active_id]
+                 self.classifier = create_ai_model(model_conf["type"], model_conf.get("settings", {}))
+                 self.classifier.load(model_conf["model_path"])
+            else:
                  self.classifier = None
         except Exception as e:
-             self.logger.error(f"Fehler beim Laden der KI: {e}")
-             self.classifier = None
+            self.logger.error(f"Fehler beim Laden der KI: {e}")
+            self.classifier = None
 
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
@@ -127,11 +123,11 @@ class Steuerung:
                 self.logger.info(f"=== Starte Session {session_idx + 1} ({len(session.tasks)} Tasks, {session.repetitions} Wiederholungen) ===")
                 
                 for rep in range(session.repetitions):
-                    self.logger.info(f"=== Wiederholung {rep + 1}/{session.repetitions}")
+                    self.logger.info(f"=== Wiederholung {rep + 1}/{session.repetitions} === \n")
                     self.execute_session(session, global_test_counter)
                     global_test_counter += 1
 
-            self.logger.info("=== Alle geplanten Tests abgeschlossen.")
+            self.logger.info("=== Alle geplanten Tests abgeschlossen. === \n")
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
         else:

@@ -166,18 +166,20 @@ class RandomForestModel(AbstractSonarModel):
             else:
                  features = np.concatenate([stats, wave]).reshape(1, -1)
 
-            # Vorhersage
+            # Vorhersage & Wahrscheinlichkeiten
             prediction = self.model.predict(features)[0]
-            self.logger.info(f"Vorhersage: {prediction}")
+            log_msg = f"Vorhersage: {prediction}"
 
             if hasattr(self.model, "predict_proba"):
                 try:
                     probs = self.model.predict_proba(features)[0]
                     classes = self.model.classes_
                     prob_str = ", ".join([f"{cls}: {p:.2f}" for cls, p in zip(classes, probs)])
-                    self.logger.info(f"Wahrscheinlichkeiten: {prob_str}")
+                    log_msg += f" | {prob_str}"
                 except Exception as e:
                     self.logger.warning(f"Keine Wahrscheinlichkeiten verfügbar: {e}")
+            
+            self.logger.info(log_msg)
 
             return str(prediction)
         except Exception as e:

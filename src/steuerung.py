@@ -43,7 +43,6 @@ class Steuerung:
                      model_conf = ai_config["models"][active_id]
                      self.classifier = create_ai_model(model_conf["type"], model_conf.get("settings", {}))
                      self.classifier.load(model_conf["model_path"])
-                     self.logger.info(f"AI Modell '{active_id}' geladen.")
                  else:
                      self.logger.warning(f"Kein aktives AI Modell konfiguriert oder ID '{active_id}' ungültig.")
                      self.classifier = None
@@ -128,11 +127,11 @@ class Steuerung:
                 self.logger.info(f"=== Starte Session {session_idx + 1} ({len(session.tasks)} Tasks, {session.repetitions} Wiederholungen) ===")
                 
                 for rep in range(session.repetitions):
-                    self.logger.info(f"Wiederholung {rep + 1}/{session.repetitions}")
+                    self.logger.info(f"=== Wiederholung {rep + 1}/{session.repetitions}")
                     self.execute_session(session, global_test_counter)
                     global_test_counter += 1
 
-            self.logger.info("Alle geplanten Tests abgeschlossen.")
+            self.logger.info("=== Alle geplanten Tests abgeschlossen.")
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
         else:
@@ -156,15 +155,13 @@ class Steuerung:
             else:
                 self.logger.error(f"Task {i} in Session fehlgeschlagen. Session wird unvollständig gespeichert.")
 
-        # 2. KI-Analyse (nur wenn analyze=True und wir Daten haben)
+        # 2. KI-Analyse 
         prediction = None
-        # Nutze die Classifier-Instanz direkt
         if session.analyze and self.classifier:
             data_low = []
             data_high = []
 
             # Versuche Low und High aus den gesammelten Daten zu finden
-            # data ist eine Liste von Measurements (meist nur 1 Element pro Ping/Request)
             for data, settings in collected_data:
                 freq = settings.get("frequency")
                 if freq == "low":
@@ -174,10 +171,7 @@ class Steuerung:
             
             if data_low and data_high:
                 self.logger.info("--- Starte KI-Klassifizierung für Session---")
-                # ACHTUNG: Interface ist jetzt predict() statt predict_paired()
                 prediction = self.classifier.predict(data_low, data_high)
-                if prediction:
-                    self.logger.info(f"Klassifizierungsergebnis: {prediction}")
             else:
                 if session.analyze: # Nur warnen, wenn Analyse erwartet war
                     self.logger.warning("Konnte keine Low/High Paarung für Analyse finden (Daten fehlen).")

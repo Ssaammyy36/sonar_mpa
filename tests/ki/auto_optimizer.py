@@ -10,7 +10,7 @@ from datetime import datetime
 
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import StratifiedKFold, ParameterGrid
+from sklearn.model_selection import StratifiedKFold, ParameterGrid, cross_val_score
 from sklearn.metrics import f1_score, accuracy_score, confusion_matrix, classification_report
 
 
@@ -94,11 +94,14 @@ PARAM_GRIDS = {
 
 # --- HELPER FUNCTIONS ---
 
+# --- HELPER FUNCTIONS ---
+
 def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower()
             for text in re.split(r'(\d+)', s)]
 
 def process_signal_fast(sig, win_len, p_mask, v_start):
+    # (No changes to signal processing)
     sig_len = len(sig)
     
     # Peak
@@ -214,18 +217,9 @@ def load_data_and_extract():
             
     return np.array(X_list), np.array(Y_list)
 
-def evaluate_configuration(X_train, Y_train, X_test, Y_test, model_type, params, use_scaler, pca_var):
-    """
-    Trains and evaluates a specific configuration.
-    Returns dictionary with results.
-    """
-    NUM_STATS = 8
-    
-    # Combined Pipeline for CV
+def create_pipeline(model_type, params, use_scaler, pca_var):
     from sklearn.pipeline import Pipeline
-    from sklearn.model_selection import cross_val_score
-
-    # Construct Pipeline
+    
     steps = []
     
     # 1. Scaling
@@ -234,102 +228,59 @@ def evaluate_configuration(X_train, Y_train, X_test, Y_test, model_type, params,
         
     # 2. PCA
     if pca_var is not None:
-        # Note: PCA in Pipeline requires int or float correctly. 
-        # But we need dynamic n_components based on X_train size which Pipeline handles but 
-        # here we might just pass the ratio if float, or int.
-        # However, to be safe and avoid "n_components > n_samples" errors in CV splits:
+        # Note: We rely on the valid float/int passing. 
+        # If float < 1.0, it selects variance. If int, it selects components.
+        # Pipeline handles this dynamically.
         steps.append(('pca', PCA(n_components=pca_var, random_state=RANDOM_STATE)))
 
     # 3. Model
     model_conf = PARAM_GRIDS[model_type]
-    clf = model_conf['model'].set_params(**params)
+    # We clone to avoid mutating the global definition
+    from sklearn.base import clone
+    clf = clone(model_conf['model'])
+    clf.set_params(**params)
     steps.append(('model', clf))
     
-    pipeline = Pipeline(steps)
+    return Pipeline(steps)
+
+def evaluate_configuration(X_train, Y_train, X_test, Y_test, model_type, params, use_scaler, pca_var):
+    """
+    Trains and evaluates a specific configuration using CV.
+    """
+    
+    pipeline = create_pipeline(model_type, params, use_scaler, pca_var)
     
     # CV Evaluation
     cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_STATE)
     
-    # We use 'f1_weighted' for scoring
-    # Note: We need to pass the combined features (Stats + Wave) or just Wave?
-    # The stats (first 8 cols) are NOT scaled/PCA'd in the logic above usually.
-    # BUT: implementing complex ColumnTransformer in loop is verbose.
-    # SIMPLIFICATION: We will apply Scaler/PCA to ALL features for the CV loop to keep it robust and simple.
-    # Or: We manually do the split, scale/pca wave, concat, then CV.
-    
-    # Manual CV loop to respect Stats vs Wave preprocessing distinction
-    cv_scores = []
-    
-    X_final = np.hstack([X_train, X_train]) # Placeholder size
-    
-    for train_idx, val_idx in cv.split(X_train, Y_train):
-        X_tr_fold, X_val_fold = X_train[train_idx], X_train[val_idx]
-        y_tr_fold, y_val_fold = Y_train[train_idx], Y_train[val_idx]
+    # We apply the pipeline to the WHOLE feature vector (X_train)
+    # This might differ slightly from original manual split logic but is more standard.
+    try:
+        cv_scores = cross_val_score(pipeline, X_train, Y_train, cv=cv, scoring='f1_weighted', n_jobs=1)
+        avg_cv_f1 = np.mean(cv_scores)
+    except Exception as e:
+        # Catch errors like PCA n_components > n_samples
+        print(f"CV Error ({model_type}): {e}") 
+        avg_cv_f1 = 0.0
+
+    # Retrain on Full Train for Final Test Score (Reporting & debugging)
+    try:
+        pipeline.fit(X_train, Y_train)
+        Y_pred_test = pipeline.predict(X_test)
+        test_acc = accuracy_score(Y_test, Y_pred_test)
         
-        # Split Stats/Wave
-        X_tr_stats = X_tr_fold[:, :NUM_STATS]
-        X_tr_wave  = X_tr_fold[:, NUM_STATS:]
-        X_val_stats = X_val_fold[:, :NUM_STATS]
-        X_val_wave  = X_val_fold[:, NUM_STATS:]
-        
-        # Scaling
-        if use_scaler == 'StandardScaler':
-            s = StandardScaler()
-            X_tr_wave = s.fit_transform(X_tr_wave)
-            X_val_wave = s.transform(X_val_wave)
-            
-        # PCA
-        if pca_var is not None:
-            n_comps = pca_var
-            if n_comps >= 1.0: n_comps = min(n_comps, min(X_tr_wave.shape))
-            try:
-                p = PCA(n_components=n_comps, random_state=RANDOM_STATE)
-                X_tr_wave = p.fit_transform(X_tr_wave)
-                X_val_wave = p.transform(X_val_wave)
-                actual_components = p.n_components_
-            except:
-                actual_components = 0
-        else:
-            actual_components = X_tr_wave.shape[1]
-            
-        # Concat
-        X_tr_final = np.hstack([X_tr_stats, X_tr_wave])
-        X_val_final = np.hstack([X_val_stats, X_val_wave])
-        
-        # Train & Predict
-        clf.fit(X_tr_final, y_tr_fold)
-        pred = clf.predict(X_val_final)
-        
-        score = f1_score(y_val_fold, pred, average='weighted')
-        cv_scores.append(score)
-        
-    avg_cv_f1 = np.mean(cv_scores)
-    
-    # Retrain on Full Train for Final Test Score (Reporting purposes)
-    # Re-process full train
-    X_stats_train = X_train[:, :NUM_STATS]
-    X_wave_train = X_train[:, NUM_STATS:]
-    X_stats_test = X_test[:, :NUM_STATS]
-    X_wave_test = X_test[:, NUM_STATS:]
-    
-    if use_scaler == 'StandardScaler':
-        s = StandardScaler()
-        X_wave_train = s.fit_transform(X_wave_train)
-        X_wave_test = s.transform(X_wave_test)
-        
-    if pca_var is not None:
-        try:
-            p = PCA(n_components=pca_var, random_state=RANDOM_STATE)
-            X_wave_train = p.fit_transform(X_wave_train)
-            X_wave_test = p.transform(X_wave_test)
-        except: pass
-        
-    X_tr_full = np.hstack([X_stats_train, X_wave_train])
-    X_te_full = np.hstack([X_stats_test, X_wave_test])
-    
-    clf.fit(X_tr_full, Y_train)
-    Y_pred_test = clf.predict(X_te_full)
-    test_acc = accuracy_score(Y_test, Y_pred_test)
+        # Check actual PCA components if applicable
+        actual_components = 0
+        if 'pca' in pipeline.named_steps:
+            actual_components = pipeline.named_steps['pca'].n_components_
+        elif 'model' in pipeline.named_steps:
+             # If no PCA, features involved = input features
+             pass
+             
+    except Exception as e:
+        test_acc = 0.0
+        Y_pred_test = np.zeros_like(Y_test)
+        actual_components = 0
     
     return {
         'model_type': model_type,
@@ -338,7 +289,6 @@ def evaluate_configuration(X_train, Y_train, X_test, Y_test, model_type, params,
         'pca_var': pca_var,
         'f1_score': avg_cv_f1, # OPTIMIZE ON CV SCORE
         'accuracy': test_acc,  # Report Test Acc
-        'n_features': X_tr_full.shape[1],
         'pca_components': actual_components,
         'y_true': Y_test,
         'y_pred': Y_pred_test
@@ -389,9 +339,6 @@ def run_optimization():
                     idx += 1
                     if idx % 10 == 0:
                         print(f"  Progress: {idx}/{total_iterations}...", end='\r')
-                        
-                    # Verbose debug if stuck
-                    # print(f"  Running: {model_name} | {params} | Scaler={scaler_opt} | PCA={pca_opt}")
                     
                     res = evaluate_configuration(
                         X_train, Y_train, X_test, Y_test,
@@ -415,6 +362,10 @@ def run_optimization():
     print("OPTIMIZATION RESULTS (Weighted F1-Score)")
     print("="*60)
     
+    RESULTS_DIR = os.path.join(BASE_PATH, 'optimization_results')
+    MODELS_DIR = os.path.join(BASE_PATH, 'models') # Ensure this path matches train_model.py convention if possible
+    os.makedirs(MODELS_DIR, exist_ok=True)
+    
     report_path = os.path.join(RESULTS_DIR, 'best_params.txt')
     with open(report_path, 'w') as f:
         f.write("OPTIMIZATION RESULTS\n")
@@ -436,6 +387,23 @@ def run_optimization():
             
             f.write(line1 + "\n" + line2 + "\n" + line3 + "\n" + line4 + "\n" + line5 + "\n")
             f.write("-" * 30 + "\n")
+            
+            # --- SAVE MODEL ---
+            # Retrain best configuration on X_train (or X_all if preferred, X_train is safer for validation consistency)
+            print(f"  Saving best {m_name.upper()} model...")
+            final_pipeline = create_pipeline(res['model_type'], res['params'], res['scaler'], res['pca_var'])
+            final_pipeline.fit(X_train, Y_train)
+            
+            # Filename: sonar_model_{algo}_opt.pkl
+            model_filename = f"sonar_model_{m_name}_opt.pkl"
+            model_path = os.path.join(MODELS_DIR, model_filename)
+            
+            # Save extra metadata/artifacts if needed? Just joblib is fine.
+            # We assume user loads it and knows it's a pipeline.
+            joblib.dump(final_pipeline, model_path)
+            print(f"  Saved to: {model_path}")
+            
+            print("-" * 30)
 
     # --- VISUALIZATION ---
     # 1. Bar Chart Comparison
@@ -469,6 +437,7 @@ def run_optimization():
         plt.close()
         
     print(f"\nResults saved to: {RESULTS_DIR}")
+    print(f"Optimized Models saved to: {MODELS_DIR}")
 
 if __name__ == "__main__":
     run_optimization()

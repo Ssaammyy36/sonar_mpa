@@ -37,7 +37,7 @@ ANALYSIS_CONFIG = {
     "models": {
         "random_forest": {
             "type": "random_forest",
-            "model_path": "models/advanced_ki.pkl",
+            "model_path": "models/sonar_model_155_noScaler_noPCA.pkl",
             "settings": {
                 "win_len": 155,
                 "p_mask_hf": 30,

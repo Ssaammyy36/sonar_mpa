@@ -8,7 +8,7 @@ if __name__ == "__main__":
     Hauptfunktion: Definiert die auszuführenden Tests und startet die Anwendung.
     """
     try:
-        # --- HIER DIE GEWÜNSCHTEN TESTS DEFINIEREN ---
+        # Tests definieren
         geplante_sessions = [
             MeasurementSession(
                 tasks=[

@@ -24,9 +24,10 @@ CLASSES = {
 
 # Allgemeine Logging-Einstellungen
 LOGGING_CONFIG = {
-    "plot_echograms": True,
+    "plot_echograms": False,
     "save_csv": True,
-    "log_raw_data": False
+    "log_raw_data": False,
+    "logger_level": "INFO"
 }
 
 # Einstellungen für die KI-Klassifizierung

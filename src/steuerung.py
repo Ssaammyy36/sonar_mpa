@@ -38,9 +38,9 @@ class Steuerung:
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
         # Schrittkette starten
-        self.run_tests()
+        self.execute_campaign()
 
-    def run_single_test(self, mode_id: str, frequency: str, class_name: str, test_number: int, save_result: bool = True) -> Tuple[List[Measurement], Dict]:
+    def execute_measurement(self, mode_id: str, frequency: str, class_name: str, test_number: int, save_result: bool = True) -> Tuple[List[Measurement], Dict]:
         """
         Führt einen einzelnen, klar definierten Test basierend auf der Konfiguration durch.
 
@@ -75,7 +75,6 @@ class Steuerung:
         # 3. Daten lesen (mit Timeout aus der Konfiguration)
         read_timeout = mode_settings.get("read_timeout", 2.0)
         sensor_daten = self.sonar.daten_lesen(dauer=read_timeout)
-        
         if not sensor_daten:
             self.logger.error(f"Keine Daten für Test {mode_name} empfangen!")
             return [], mode_settings
@@ -88,19 +87,17 @@ class Steuerung:
             settings=mode_settings,
         )
 
-        self.logger.info(f"Test '{mode_name}' beendet")
-
-        # 5. Visualisieren (immer sofort, gutes Feedback)
+        # 5. Visualisieren 
         if config.LOGGING_CONFIG["plot_echograms"] and data_packages:
             self.visualisierung.create_plots_from_measurements([data_packages[0]], mode_name, mode_settings, test_number)
 
-        # 6. Daten in CSV schreiben (Optional, falls später mit Prediction gespeichert werden soll)
+        # 6. Daten in CSV schreiben 
         if save_result:
             self.datenverarbeitung.append_ping_to_csv(data_packages=data_packages, settings=mode_settings)
 
         return data_packages, mode_settings
 
-    def run_tests(self):
+    def execute_campaign(self):
         """
         Führt die geplanten Sessions und deren Wiederholungen aus.
         """
@@ -114,7 +111,7 @@ class Steuerung:
                 
                 for rep in range(session.repetitions):
                     self.logger.info(f"Wiederholung {rep + 1}/{session.repetitions}")
-                    self.run_session_iteration(session, global_test_counter)
+                    self.execute_session(session, global_test_counter)
                     global_test_counter += 1
 
             self.logger.info("Alle geplanten Tests abgeschlossen.")
@@ -123,23 +120,19 @@ class Steuerung:
         else:
             self.logger.error("Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
 
-    def run_session_iteration(self, session: 'MeasurementSession', session_id: int):
+    def execute_session(self, session: 'MeasurementSession', session_id: int):
         """
         Führt einen einzelnen Durchlauf einer Session aus.
         """
         collected_data = [] # List of tuple (data, settings)
 
-        # 1. Alle Tasks der Session ausführen
+        # 1. Alle Messungen der Session ausführen
         for i, task in enumerate(session.tasks):
-            # Test-ID generieren für eindeutige Plots/Logs
             test_number = session_id * 100 + i 
-            
-            # Ergebnis erst speichern, wenn wir wissen ob Prediction kommt oder nicht
-            data, settings = self.run_single_test(
+            data, settings = self.execute_measurement(
                 task.mode_id, task.frequency, task.class_name, 
                 test_number, save_result=False
             )
-            
             if data:
                 collected_data.append((data, settings))
             else:

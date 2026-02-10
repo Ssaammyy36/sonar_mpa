@@ -1,0 +1,478 @@
+import os
+import re
+import glob
+import joblib
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, precision_recall_fscore_support
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+
+# Feature Engineering Flags
+MODEL_TYPE = 'rf'    # Options: 'rf' (Random Forest), 'svm' (Support Vector Machine), 'knn' (K-Nearest Neighbors), 'mlp' (Multi Layer Perceptron), 'gb' (Gradient Boosting)
+USE_SCALER = True    # Set to True to use StandardScaler on the window
+USE_PCA = True      # Set to True to use PCA on the window
+PCA_VARIANCE = 0.24  # Explained variance ratio for PCA (if USE_PCA is True)
+
+# Signal Parameters
+WINDOW_LEN = 155
+HF_P_MASK = 30       # High Frequency Peak Mask
+HF_V_START = 20      # High Frequency Valley Start search
+LF_P_MASK = 78       # Low Frequency Peak Mask
+LF_V_START = 55      # Low Frequency Valley Start search
+
+RANDOM_STATE = 42
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+DATA_ROOT = os.path.join(BASE_PATH, '../../data')
+MODELS_DIR = os.path.join(BASE_PATH, 'models')
+os.makedirs(MODELS_DIR, exist_ok=True)
+MODEL_FILE = os.path.join(MODELS_DIR, 'sonar_model.pkl')
+
+DATA_DIRS = [
+    'messung_08_01_26',
+    'messung_15_12_25',
+    'messung_09_02_26',
+    'messung_10_02_26'
+]
+
+# Expected columns for robust loading (ignoring broken headers)
+EXPECTED_COLS = ['Timestamp', 'class_name', 'Frequency', 'NMEA_Depth_m', 
+                 'PulseLength_us', 'Sampling_Freq_Hz', 'Prediction'] + \
+                [f'S_{i}' for i in range(400)]
+
+# Plotting style
+sns.set_theme(style="whitegrid")
+plt.rcParams['figure.figsize'] = (14, 6)
+plt.rcParams['font.size'] = 11
+
+
+# --- HELPER FUNCTIONS ---
+
+def get_model(model_name, random_state=42):
+    """Returns the requested classifier model."""
+    if model_name == 'rf':
+        return RandomForestClassifier(n_estimators=300, random_state=random_state)
+    elif model_name == 'svm':
+        return SVC(kernel='rbf', probability=True, random_state=random_state)
+    elif model_name == 'knn':
+        return KNeighborsClassifier(n_neighbors=5)
+    elif model_name == 'mlp':
+        return MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=500, random_state=random_state)
+    elif model_name == 'gb':
+        return GradientBoostingClassifier(n_estimators=200, learning_rate=0.1, random_state=random_state)
+    else:
+        raise ValueError(f"Unknown model: {model_name}")
+
+def natural_sort_key(s):
+    """Sorts strings containing numbers naturally (e.g. S_2 before S_10)."""
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split(r'(\d+)', s)]
+
+def process_signal_fast(sig, win_len, p_mask, v_start):
+    """
+    Extracts features (Energy, Peak, Width) and the aligned window from a signal.
+    """
+    sig_len = len(sig)
+    
+    # 1. Detect Peak
+    roi_start = min(sig_len, p_mask)
+    if roi_start >= sig_len:
+        peak_idx = 0
+    else:
+        peak_idx = roi_start + np.argmax(sig[roi_start:])
+    
+    peak_val_raw = sig[peak_idx] if peak_idx < sig_len else 0
+    
+    # 2. Detect Valley (before Peak)
+    v_s = min(sig_len, v_start)
+    v_e = peak_idx
+    
+    if v_s >= v_e:
+        valley_idx = v_s
+    else:
+        valley_idx = v_s + np.argmin(sig[v_s:v_e])
+        
+    valley_val = sig[valley_idx] if valley_idx < sig_len else 0
+    
+    # 3. Detect Onset (Threshold based)
+    threshold = valley_val + (peak_val_raw - valley_val) * 0.10
+    rise_segment = sig[valley_idx:peak_idx] if valley_idx < peak_idx else np.array([])
+    
+    if len(rise_segment) == 0:
+        onset_abs = valley_idx
+    else:
+        # Find last point below threshold in the rising segment
+        below_idxs = np.where(rise_segment < threshold)[0]
+        if len(below_idxs) > 0:
+            onset_abs = valley_idx + below_idxs[-1]
+        else:
+            onset_abs = valley_idx
+            
+    # 4. Extract Aligned Window
+    start_idx = onset_abs
+    end_idx = start_idx + win_len
+    aligned_window = np.zeros(win_len)
+    
+    read_start = max(0, start_idx)
+    read_end = min(sig_len, end_idx)
+    write_start = read_start - start_idx
+    write_end = write_start + (read_end - read_start)
+    
+    if read_start < read_end and write_start < win_len:
+        aligned_window[write_start:write_end] = sig[read_start:read_end]
+        
+    # 5. Calculate Features
+    raw_energy = np.sum(aligned_window**2)
+    s_val = np.std(aligned_window)
+    m_val = np.mean(aligned_window)
+    
+    if s_val > 1e-9:
+        aligned_window_norm = (aligned_window - m_val) / s_val
+    else:
+        aligned_window_norm = aligned_window - m_val
+        
+    # Calculate Width (FWHM-like)
+    loc = peak_idx - start_idx
+    loc = max(0, min(win_len - 1, loc))
+    peak_norm = aligned_window_norm[loc]
+    half_val = peak_norm * 0.5
+    
+    # Left flank
+    left_part = aligned_window_norm[:loc]
+    left_idxs = np.where(left_part < half_val)[0]
+    left_idx = left_idxs[-1] if len(left_idxs) > 0 else 0
+    
+    # Right flank
+    right_part = aligned_window_norm[loc:]
+    right_idxs = np.where(right_part < half_val)[0]
+    width_idx = (loc + right_idxs[0]) if len(right_idxs) > 0 else (win_len - 1)
+    
+    width = width_idx - left_idx
+    
+    return [raw_energy, peak_val_raw, peak_norm, width], aligned_window_norm
+
+def _sniff_csv_separator(filepath):
+    """Determines if the CSV uses semicolon or comma as separator."""
+    with open(filepath, 'r', errors='ignore') as f:
+        line = f.readline()
+    if line.count(';') > line.count(','):
+        return ';', ','
+    return ',', '.'
+
+def load_all_data(root_path, dir_names):
+    """
+    Recursively loads CSV files from specified directories.
+    Handles varying separators and strictly enforces the expected schema.
+    """
+    data_frames = []
+    print(f"Searching for data in {root_path}...")
+    
+    for d in dir_names:
+        search_pattern = os.path.join(root_path, d, '**', '*.csv')
+        files = glob.glob(search_pattern, recursive=True)
+        print(f"  -> {d}: Found {len(files)} CSV files.")
+        
+        for f in files:
+            try:
+                sep, dec = _sniff_csv_separator(f)
+                
+                # Load with strict schema, skipping the potentially broken header
+                df = pd.read_csv(
+                    f, sep=sep, decimal=dec, 
+                    names=EXPECTED_COLS, 
+                    header=None, skiprows=1,
+                    on_bad_lines='skip', engine='python'
+                )
+                
+                # Verify structure
+                if len(df.columns) < 5:
+                     # Fallback to comma if sniffing failed
+                     df = pd.read_csv(
+                        f, sep=',', decimal='.', 
+                        names=EXPECTED_COLS, 
+                        header=None, skiprows=1,
+                        on_bad_lines='skip', engine='python'
+                    )
+
+                df['source_file'] = f
+                data_frames.append(df)
+                
+            except Exception as e:
+                print(f"Skipping {f}: {e}")
+                
+    if not data_frames:
+        raise RuntimeError("No valid data files found.")
+        
+    full_df = pd.concat(data_frames, ignore_index=True)
+    full_df.fillna(0, inplace=True)
+    
+    print(f"Total data loaded: {len(full_df)} rows.")
+    return full_df
+
+def extract_features(df_all, win_len):
+    """
+    Extracts features for paired High/Low frequency signals.
+    Returns feature matrix X, labels Y, and raw signals for visualization.
+    """
+    unique_files = df_all['source_file'].unique()
+    
+    X_list = []
+    Y_list = []
+    hf_raw_list = []
+    lf_raw_list = []
+    files_list = []
+    
+    print(f"Processing pairs from {len(unique_files)} files...")
+    
+    for f in unique_files:
+        df_file = df_all[df_all['source_file'] == f]
+        
+        # Sort by timestamp to align pulses
+        df_high = df_file[df_file['Frequency'].str.lower() == 'high'].sort_values('Timestamp')
+        df_low  = df_file[df_file['Frequency'].str.lower() == 'low'].sort_values('Timestamp')
+        
+        # We can only use complete pairs
+        n_samples = min(len(df_high), len(df_low))
+        if n_samples == 0:
+            continue
+            
+        df_high = df_high.iloc[:n_samples]
+        df_low  = df_low.iloc[:n_samples]
+        
+        # Select signal columns
+        hf_cols = sorted([c for c in EXPECTED_COLS if c.startswith('S_')], key=natural_sort_key)
+        lf_cols = sorted([c for c in EXPECTED_COLS if c.startswith('S_')], key=natural_sort_key)
+        
+        # Validation
+        missing_cols = [c for c in hf_cols if c not in df_high.columns]
+        if missing_cols:
+            print(f"Warning: Missing columns in {f}. Skipping.")
+            continue
+            
+        data_hf = df_high[hf_cols].values
+        data_lf = df_low[lf_cols].values
+        labels = df_high['class_name'].values
+        
+        # Process each pair
+        for i in range(n_samples):
+            # Optimised parameters for High vs Low frequency
+            stats_hf, win_hf = process_signal_fast(data_hf[i], win_len, p_mask=HF_P_MASK, v_start=HF_V_START)
+            stats_lf, win_lf = process_signal_fast(data_lf[i], win_len, p_mask=LF_P_MASK, v_start=LF_V_START)
+            
+            # Combine all features
+            feature_vector = np.concatenate([stats_hf, stats_lf, win_hf, win_lf])
+            
+            X_list.append(feature_vector)
+            Y_list.append(labels[i])
+            hf_raw_list.append(data_hf[i])
+            lf_raw_list.append(data_lf[i])
+            files_list.append(f)
+            
+    return np.array(X_list), np.array(Y_list), np.array(hf_raw_list), np.array(lf_raw_list), np.array(files_list)
+
+def plot_signal_details(ax, sig, win_len, p_mask, v_start, title):
+    """Visualizes the signal processing steps (Peak, Valley, Onset) on a given axis."""
+    sig_len = len(sig)
+    
+    # 1. Re-calculate points (same logic as process_signal)
+    roi_start = min(sig_len, p_mask)
+    if roi_start >= sig_len:
+        peak_idx = 0
+    else:
+        peak_idx = roi_start + np.argmax(sig[roi_start:])
+    
+    v_s = min(sig_len, v_start)
+    if v_s >= peak_idx:
+        valley_idx = v_s
+    else:
+        valley_idx = v_s + np.argmin(sig[v_s:peak_idx])
+        
+    peak_val = sig[peak_idx]
+    valley_val = sig[valley_idx]
+    
+    threshold = valley_val + (peak_val - valley_val) * 0.10
+    rise_segment = sig[valley_idx:peak_idx] if valley_idx < peak_idx else np.array([])
+    
+    if len(rise_segment) > 0:
+        below_idxs = np.where(rise_segment < threshold)[0]
+        onset_abs = valley_idx + (below_idxs[-1] if len(below_idxs) > 0 else 0)
+    else:
+        onset_abs = valley_idx
+
+    # 2. Draw Plot
+    ax.plot(sig, color='#7f8c8d', alpha=0.6, label='Raw Signal')
+    ax.plot(peak_idx, peak_val, 'rx', markersize=10, markeredgewidth=2, label='Peak')
+    ax.plot(valley_idx, valley_val, 'bv', markersize=10, label='Valley')
+    ax.plot(onset_abs, sig[onset_abs], 'go', markersize=8, label='Onset')
+
+    # Visualise Window
+    ax.axvspan(onset_abs, onset_abs + win_len, color='#2ecc71', alpha=0.15, label='Window')
+    ax.hlines(threshold, valley_idx, peak_idx, colors='orange', linestyles='--', label='Threshold')
+
+    ax.set_title(title)
+    ax.legend(loc='upper right', fontsize='small')
+    ax.grid(True, alpha=0.3)
+
+
+# --- MAIN EXECUTION ---
+
+if __name__ == "__main__":
+    print(f"Configuration: Model={MODEL_TYPE}, Scaler={USE_SCALER}, PCA={USE_PCA} (Var={PCA_VARIANCE})")
+
+    print(f"Configuration: Model={MODEL_TYPE}, Scaler={USE_SCALER}, PCA={USE_PCA} (Var={PCA_VARIANCE})")
+
+    try:
+        # 1. Load Data
+        df_all = load_all_data(DATA_ROOT, DATA_DIRS)
+        
+        # 2. Extract Features
+        X_all, Y_all, raw_hf_all, raw_lf_all, files_all = extract_features(df_all, WINDOW_LEN)
+        
+        if len(Y_all) == 0:
+            raise RuntimeError("No valid data pairs extracted.")
+
+        print(f"\nTotal Samples extracted: {len(Y_all)}")
+
+        # 3. Train/Test Split
+        X_train, X_test, Y_train, Y_test, hf_train, _, lf_train, _, files_train, files_test = train_test_split(
+            X_all, Y_all, raw_hf_all, raw_lf_all, files_all,
+            test_size=0.2, random_state=RANDOM_STATE, stratify=Y_all
+        )
+
+        print(f"Training Set: {len(X_train)} samples")
+        print(f"Test Set:     {len(X_test)} samples")
+        
+    # 4. Feature Processing Splits
+        # First 8 columns are manual stats (4 HF + 4 LF), rest is raw window
+        NUM_STATS = 8
+        X_stats_train = X_train[:, :NUM_STATS]
+        X_wave_train  = X_train[:, NUM_STATS:]
+        X_stats_test  = X_test[:, :NUM_STATS]
+        X_wave_test   = X_test[:, NUM_STATS:]
+        
+        # 5. Preprocessing & PCA
+        scaler = None
+        pca = None
+        
+        # A) Scaler
+        if USE_SCALER:
+            print("Applying StandardScaler...")
+            scaler = StandardScaler()
+            X_wave_train_std = scaler.fit_transform(X_wave_train)
+            X_wave_test_std  = scaler.transform(X_wave_test)
+        else:
+            print("Skipping StandardScaler (using raw data)...")
+            X_wave_train_std = X_wave_train
+            X_wave_test_std  = X_wave_test
+
+        # B) PCA
+        if USE_PCA:
+            print(f"Calculating PCA (Variance: {PCA_VARIANCE})...")
+            pca = PCA(n_components=PCA_VARIANCE, random_state=RANDOM_STATE)
+            X_pca_train = pca.fit_transform(X_wave_train_std)
+            X_pca_test  = pca.transform(X_wave_test_std)
+            print(f" -> {pca.n_components_} components explain {np.sum(pca.explained_variance_ratio_)*100:.1f}% variance.")
+            wave_features_train = X_pca_train
+            wave_features_test  = X_pca_test
+        else:
+            print("Skipping PCA (using full window)...")
+            wave_features_train = X_wave_train_std
+            wave_features_test  = X_wave_test_std
+        
+        # Combine manual stats with processed features
+        X_train_final = np.hstack([X_stats_train, wave_features_train])
+        X_test_final  = np.hstack([X_stats_test, wave_features_test])
+        
+        # 6. Model Training
+        print(f"Training {MODEL_TYPE.upper()}...")
+        model = get_model(MODEL_TYPE, RANDOM_STATE)
+        model.fit(X_train_final, Y_train)
+        
+        # 7. Evaluation
+        Y_pred = model.predict(X_test_final)
+        acc = accuracy_score(Y_test, Y_pred)
+        
+        print("=" * 40)
+        print(f"TEST ACCURACY: {acc * 100:.1f}%")
+        print("=" * 40)
+        print("\nClassification Report:")
+        print(classification_report(Y_test, Y_pred))
+        
+        # 8. Save Model
+        # Dynamic Filename construction
+        config_str = f"{MODEL_TYPE}"
+        if USE_SCALER: config_str += "_scaled"
+        else: config_str += "_noscaling"
+        
+        if USE_PCA: config_str += f"_pca{int(PCA_VARIANCE*100) if PCA_VARIANCE < 1 else PCA_VARIANCE}"
+        else: config_str += "_nopca"
+            
+        dynamic_model_name = f"sonar_model_{config_str}.pkl"
+        dynamic_model_path = os.path.join(MODELS_DIR, dynamic_model_name)
+        
+        model_data = {
+            'model': model, 
+            'pca': pca, 
+            'scaler': scaler, 
+            'acc': acc,
+            'config': {
+                'use_scaler': USE_SCALER, 
+                'use_pca': USE_PCA,
+                'window_len': WINDOW_LEN,
+                'model_type': MODEL_TYPE
+            }
+        }
+        
+        joblib.dump(model_data, dynamic_model_path)
+        
+        print(f"Model saved to: {dynamic_model_path}")
+
+        # 9. Visualization - Separate Figures
+        print("\nVisualizing Results...")
+        
+        # Figure 1: Signal Examples
+        plt.figure(figsize=(12, 6))
+        ax1 = plt.subplot(2, 1, 1)
+        ax2 = plt.subplot(2, 1, 2)
+        sample_label = Y_train[0]
+        plot_signal_details(ax1, hf_train[0], WINDOW_LEN, HF_P_MASK, HF_V_START, f"HIGH Frequency - {sample_label}")
+        plot_signal_details(ax2, lf_train[0], WINDOW_LEN, LF_P_MASK, LF_V_START, f"LOW Frequency - {sample_label}")
+        plt.tight_layout()
+        plt.show()
+
+        # Figure 2: Data Distribution (Train/Test Split)
+        train_counts = pd.Series([os.path.basename(f) for f in files_train]).value_counts()
+        test_counts  = pd.Series([os.path.basename(f) for f in files_test]).value_counts()
+        df_dist = pd.DataFrame({'Train': train_counts, 'Test': test_counts}).fillna(0).sort_index()
+        
+        plt.figure(figsize=(10, 6))
+        df_dist.plot(kind='bar', stacked=True, color=['#3498db', '#e74c3c'], alpha=0.8)
+        plt.title("Data Distribution per Source File")
+        plt.ylabel("Number of Samples")
+        plt.xticks(rotation=45, ha='right')
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        
+        # Figure 3: Confusion Matrix
+        plt.figure(figsize=(8, 6))
+        cm = confusion_matrix(Y_test, Y_pred)
+        classes = np.unique(Y_test)
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
+        plt.title(f"Test Set Confusion Matrix (Acc: {acc:.1%})")
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        plt.tight_layout()
+        plt.show()
+        
+    except Exception as e:
+        print(f"\nCRITICAL ERROR: {e}")

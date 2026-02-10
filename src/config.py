@@ -31,12 +31,14 @@ LOGGING_CONFIG = {
 }
 
 # Einstellungen für die KI-Klassifizierung
+# Einstellungen für die KI-Klassifizierung
 ANALYSIS_CONFIG = {
     "enable_classification": True,
     "active_model_id": "random_forest",
     "models": {
         "random_forest": {
             "type": "random_forest",
+<<<<<<< HEAD
             "model_path": "models/advanced_ki.pkl",
             "settings": {
                 "win_len": 155,
@@ -44,11 +46,25 @@ ANALYSIS_CONFIG = {
                 "v_start_hf": 20,
                 "p_mask_lf": 78,
                 "v_start_lf": 55
+=======
+            "model_path": "models/sonar_model_155_noScaler_noPCA.pkl",
+            "settings": {
+                "win_len": 155
+>>>>>>> dev
             }
         },
         "lstm": {
             "type": "lstm",
+<<<<<<< HEAD
             "model_path": "models/lstm_demo.pth",
+=======
+            "model_path": "???",
+            "settings": {}
+        },
+        "svm": {
+            "type": "svm",
+            "model_path": "???",
+>>>>>>> dev
             "settings": {}
         }
     }

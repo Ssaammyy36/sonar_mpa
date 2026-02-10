@@ -12,10 +12,10 @@ if __name__ == "__main__":
         geplante_sessions = [
             MeasurementSession(
                 tasks=[
-                    TestSzenario(class_name="Stones", mode_id="4", frequency="low"),
-                    TestSzenario(class_name="Stones", mode_id="4", frequency="high")
+                    TestSzenario(class_name="Sand", mode_id="4", frequency="low"),
+                    TestSzenario(class_name="Sand", mode_id="4", frequency="high")
                 ],
-                repetitions=1, 
+                repetitions=10, 
                 analyze=True
             ),
         ]

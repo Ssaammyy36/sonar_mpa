@@ -16,10 +16,7 @@ DATA_ROOT = os.path.join(BASE_PATH, '../../data')
 MODEL_FILE = os.path.join(BASE_PATH, 'sonar_model.pkl')
 
 DATA_DIRS = [
-    'messung_08_01_26',
-    'messung_15_12_25',
-    'überprüfung_08_01_26',
-    'messung_09_02_26'
+    'messung_10_02_26'
 ]
 
 EXPECTED_COLS = ['Timestamp', 'class_name', 'Frequency', 'NMEA_Depth_m', 

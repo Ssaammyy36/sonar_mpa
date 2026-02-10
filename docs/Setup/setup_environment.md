@@ -7,6 +7,7 @@ Wir verwenden einen venv für einfaches Packet-Management
 
 1. Virtuelle Umgebung erstellen: `python -m venv .venv`
 2. Virtuelle Umgebung aktivieren: `.venv\Scripts\activate`
+3. Pip aktualisieren: `python -m pip install --upgrade pip`
    
 ## Verwendung 
 

@@ -14,7 +14,19 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
 # --- CONFIGURATION ---
+# --- CONFIGURATION ---
+# Feature Engineering Flags
+USE_SCALER = True   # Set to True to use StandardScaler on the window
+USE_PCA = False      # Set to True to use PCA on the window
+PCA_VARIANCE = 0.24  # Explained variance ratio for PCA (if USE_PCA is True)
+
+# Signal Parameters
 WINDOW_LEN = 155
+HF_P_MASK = 30       # High Frequency Peak Mask
+HF_V_START = 20      # High Frequency Valley Start search
+LF_P_MASK = 78       # Low Frequency Peak Mask
+LF_V_START = 55      # Low Frequency Valley Start search
+
 RANDOM_STATE = 42
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_ROOT = os.path.join(BASE_PATH, '../../data')
@@ -43,7 +55,7 @@ plt.rcParams['font.size'] = 11
 def natural_sort_key(s):
     """Sorts strings containing numbers naturally (e.g. S_2 before S_10)."""
     return [int(text) if text.isdigit() else text.lower()
-            for text in re.split('(\d+)', s)]
+            for text in re.split(r'(\d+)', s)]
 
 def process_signal_fast(sig, win_len, p_mask, v_start):
     """
@@ -197,6 +209,7 @@ def extract_features(df_all, win_len):
     Y_list = []
     hf_raw_list = []
     lf_raw_list = []
+    files_list = []
     
     print(f"Processing pairs from {len(unique_files)} files...")
     
@@ -232,8 +245,8 @@ def extract_features(df_all, win_len):
         # Process each pair
         for i in range(n_samples):
             # Optimised parameters for High vs Low frequency
-            stats_hf, win_hf = process_signal_fast(data_hf[i], win_len, p_mask=30, v_start=20)
-            stats_lf, win_lf = process_signal_fast(data_lf[i], win_len, p_mask=78, v_start=55)
+            stats_hf, win_hf = process_signal_fast(data_hf[i], win_len, p_mask=HF_P_MASK, v_start=HF_V_START)
+            stats_lf, win_lf = process_signal_fast(data_lf[i], win_len, p_mask=LF_P_MASK, v_start=LF_V_START)
             
             # Combine all features
             feature_vector = np.concatenate([stats_hf, stats_lf, win_hf, win_lf])
@@ -242,8 +255,9 @@ def extract_features(df_all, win_len):
             Y_list.append(labels[i])
             hf_raw_list.append(data_hf[i])
             lf_raw_list.append(data_lf[i])
+            files_list.append(f)
             
-    return np.array(X_list), np.array(Y_list), np.array(hf_raw_list), np.array(lf_raw_list)
+    return np.array(X_list), np.array(Y_list), np.array(hf_raw_list), np.array(lf_raw_list), np.array(files_list)
 
 def plot_signal_details(ax, sig, win_len, p_mask, v_start, title):
     """Visualizes the signal processing steps (Peak, Valley, Onset) on a given axis."""
@@ -297,7 +311,7 @@ if __name__ == "__main__":
         df_all = load_all_data(DATA_ROOT, DATA_DIRS)
         
         # 2. Extract Features
-        X_all, Y_all, raw_hf_all, raw_lf_all = extract_features(df_all, WINDOW_LEN)
+        X_all, Y_all, raw_hf_all, raw_lf_all, files_all = extract_features(df_all, WINDOW_LEN)
         
         if len(Y_all) == 0:
             raise RuntimeError("No valid data pairs extracted.")
@@ -305,15 +319,15 @@ if __name__ == "__main__":
         print(f"\nTotal Samples extracted: {len(Y_all)}")
 
         # 3. Train/Test Split
-        X_train, X_test, Y_train, Y_test, hf_train, _, lf_train, _ = train_test_split(
-            X_all, Y_all, raw_hf_all, raw_lf_all,
+        X_train, X_test, Y_train, Y_test, hf_train, _, lf_train, _, files_train, files_test = train_test_split(
+            X_all, Y_all, raw_hf_all, raw_lf_all, files_all,
             test_size=0.2, random_state=RANDOM_STATE, stratify=Y_all
         )
 
         print(f"Training Set: {len(X_train)} samples")
         print(f"Test Set:     {len(X_test)} samples")
         
-        # 4. Feature Processing Splits
+    # 4. Feature Processing Splits
         # First 8 columns are manual stats (4 HF + 4 LF), rest is raw window
         NUM_STATS = 8
         X_stats_train = X_train[:, :NUM_STATS]
@@ -322,20 +336,37 @@ if __name__ == "__main__":
         X_wave_test   = X_test[:, NUM_STATS:]
         
         # 5. Preprocessing & PCA
-        scaler = StandardScaler()
-        X_wave_train_std = scaler.fit_transform(X_wave_train)
-        X_wave_test_std  = scaler.transform(X_wave_test)
+        scaler = None
+        pca = None
         
-        print("\nCalculating PCA...")
-        pca = PCA(n_components=0.24, random_state=RANDOM_STATE)
-        X_pca_train = pca.fit_transform(X_wave_train_std)
-        X_pca_test  = pca.transform(X_wave_test_std)
+        # A) Scaler
+        if USE_SCALER:
+            print("Applying StandardScaler...")
+            scaler = StandardScaler()
+            X_wave_train_std = scaler.fit_transform(X_wave_train)
+            X_wave_test_std  = scaler.transform(X_wave_test)
+        else:
+            print("Skipping StandardScaler (using raw data)...")
+            X_wave_train_std = X_wave_train
+            X_wave_test_std  = X_wave_test
+
+        # B) PCA
+        if USE_PCA:
+            print(f"Calculating PCA (Variance: {PCA_VARIANCE})...")
+            pca = PCA(n_components=PCA_VARIANCE, random_state=RANDOM_STATE)
+            X_pca_train = pca.fit_transform(X_wave_train_std)
+            X_pca_test  = pca.transform(X_wave_test_std)
+            print(f" -> {pca.n_components_} components explain {np.sum(pca.explained_variance_ratio_)*100:.1f}% variance.")
+            wave_features_train = X_pca_train
+            wave_features_test  = X_pca_test
+        else:
+            print("Skipping PCA (using full window)...")
+            wave_features_train = X_wave_train_std
+            wave_features_test  = X_wave_test_std
         
-        print(f" -> {pca.n_components_} components explain {np.sum(pca.explained_variance_ratio_)*100:.1f}% variance.")
-        
-        # Combine manual stats with PCA features
-        X_train_final = np.hstack([X_stats_train, X_pca_train])
-        X_test_final  = np.hstack([X_stats_test, X_pca_test])
+        # Combine manual stats with processed features
+        X_train_final = np.hstack([X_stats_train, wave_features_train])
+        X_test_final  = np.hstack([X_stats_test, wave_features_test])
         
         # 6. Model Training
         print("Training Random Forest...")
@@ -353,18 +384,68 @@ if __name__ == "__main__":
         print(classification_report(Y_test, Y_pred))
         
         # 8. Save Model
-        joblib.dump({'model': model, 'pca': pca, 'scaler': scaler, 'acc': acc}, MODEL_FILE)
-        print(f"Model saved to {MODEL_FILE}")
+        # Dynamic Filename construction
+        config_str = f"{WINDOW_LEN}"
+        if USE_SCALER: config_str += "_scaled"
+        else: config_str += "_noScaler"
+        
+        if USE_PCA: config_str += f"_pca{int(PCA_VARIANCE*100) if PCA_VARIANCE < 1 else PCA_VARIANCE}"
+        else: config_str += "_noPCA"
+            
+        dynamic_model_name = f"sonar_model_{config_str}.pkl"
+        dynamic_model_path = os.path.join(BASE_PATH, dynamic_model_name)
+        
+        model_data = {
+            'model': model, 
+            'pca': pca, 
+            'scaler': scaler, 
+            'acc': acc,
+            'config': {
+                'use_scaler': USE_SCALER, 
+                'use_pca': USE_PCA,
+                'window_len': WINDOW_LEN
+            }
+        }
+        
+        joblib.dump(model_data, dynamic_model_path)
+        
+        print(f"Model saved to: {dynamic_model_path} (Dynamic Name for Comparison)")
 
-        # 9. Visualization (Example)
-        print("\nDisplaying example signal processing...")
-        fig, axes = plt.subplots(2, 1, figsize=(14, 8))
+        # 9. Visualization - Separate Figures
+        print("\nVisualizing Results...")
         
-        # Helper to plot sample 0 from training set
+        # Figure 1: Signal Examples
+        plt.figure(figsize=(12, 6))
+        ax1 = plt.subplot(2, 1, 1)
+        ax2 = plt.subplot(2, 1, 2)
         sample_label = Y_train[0]
-        plot_signal_details(axes[0], hf_train[0], WINDOW_LEN, 30, 20, f"HIGH Frequency - {sample_label}")
-        plot_signal_details(axes[1], lf_train[0], WINDOW_LEN, 78, 55, f"LOW Frequency - {sample_label}")
+        plot_signal_details(ax1, hf_train[0], WINDOW_LEN, HF_P_MASK, HF_V_START, f"HIGH Frequency - {sample_label}")
+        plot_signal_details(ax2, lf_train[0], WINDOW_LEN, LF_P_MASK, LF_V_START, f"LOW Frequency - {sample_label}")
+        plt.tight_layout()
+        plt.show()
+
+        # Figure 2: Data Distribution (Train/Test Split)
+        train_counts = pd.Series([os.path.basename(f) for f in files_train]).value_counts()
+        test_counts  = pd.Series([os.path.basename(f) for f in files_test]).value_counts()
+        df_dist = pd.DataFrame({'Train': train_counts, 'Test': test_counts}).fillna(0).sort_index()
         
+        plt.figure(figsize=(10, 6))
+        df_dist.plot(kind='bar', stacked=True, color=['#3498db', '#e74c3c'], alpha=0.8)
+        plt.title("Data Distribution per Source File")
+        plt.ylabel("Number of Samples")
+        plt.xticks(rotation=45, ha='right')
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        
+        # Figure 3: Confusion Matrix
+        plt.figure(figsize=(8, 6))
+        cm = confusion_matrix(Y_test, Y_pred)
+        classes = np.unique(Y_test)
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
+        plt.title(f"Test Set Confusion Matrix (Acc: {acc:.1%})")
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
         plt.tight_layout()
         plt.show()
         

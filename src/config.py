@@ -39,7 +39,11 @@ ANALYSIS_CONFIG = {
             "type": "random_forest",
             "model_path": "models/advanced_ki.pkl",
             "settings": {
-                "win_len": 155
+                "win_len": 155,
+                "p_mask_hf": 30,
+                "v_start_hf": 20,
+                "p_mask_lf": 78,
+                "v_start_lf": 55
             }
         },
         "lstm": {

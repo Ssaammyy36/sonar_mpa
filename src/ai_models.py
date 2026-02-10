@@ -138,21 +138,23 @@ class RandomForestModel(AbstractSonarModel):
             return [0.0, 0.0, 0.0, 0.0], np.zeros(win_len)
 
     def predict(self, data_low: List[Measurement], data_high: List[Measurement]) -> Optional[str]:
-        
+
+        # Umwandeln der Daten in numpy Arrays
         m_low = data_low[0]
         m_high = data_high[0]
-
-        if not isinstance(m_low, EchogramMeasurement) or not isinstance(m_high, EchogramMeasurement):
-            return None
-
-        WIN_LEN = self.settings.get("win_len", 155)
         
         sig_hf = np.array(m_high.data_points)
         sig_lf = np.array(m_low.data_points)
 
-        stats_hf, win_hf = self.process_signal(sig_hf, WIN_LEN, 30, 20)
-        stats_lf, win_lf = self.process_signal(sig_lf, WIN_LEN, 78, 55)
+        # Features berechnen und zusammenfügen
+        win_len = self.settings.get("win_len", 155)
+        p_mask_hf = self.settings.get("p_mask_hf", 30)
+        v_start_hf = self.settings.get("v_start_hf", 20)
+        p_mask_lf = self.settings.get("p_mask_lf", 78)
+        v_start_lf = self.settings.get("v_start_lf", 55)
 
+        stats_hf, win_hf = self.process_signal(sig_hf, win_len, p_mask_hf, v_start_hf)
+        stats_lf, win_lf = self.process_signal(sig_lf, win_len, p_mask_lf, v_start_lf)
         stats = np.concatenate([stats_hf, stats_lf])
         wave = np.concatenate([win_hf, win_lf])
         
@@ -164,7 +166,19 @@ class RandomForestModel(AbstractSonarModel):
             else:
                  features = np.concatenate([stats, wave]).reshape(1, -1)
 
+            # Vorhersage
             prediction = self.model.predict(features)[0]
+            self.logger.info(f"Vorhersage: {prediction}")
+
+            if hasattr(self.model, "predict_proba"):
+                try:
+                    probs = self.model.predict_proba(features)[0]
+                    classes = self.model.classes_
+                    prob_str = ", ".join([f"{cls}: {p:.2f}" for cls, p in zip(classes, probs)])
+                    self.logger.info(f"Wahrscheinlichkeiten: {prob_str}")
+                except Exception as e:
+                    self.logger.warning(f"Keine Wahrscheinlichkeiten verfügbar: {e}")
+
             return str(prediction)
         except Exception as e:
             self.logger.error(f"Fehler bei RF-Prediction: {e}")

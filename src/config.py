@@ -32,9 +32,22 @@ LOGGING_CONFIG = {
 
 # Einstellungen für die KI-Klassifizierung
 ANALYSIS_CONFIG = {
-    "enable_classification": True, 
-    "model_path": "models/advanced_ki.pkl", 
-    "model_type": "pickle" 
+    "enable_classification": True,
+    "active_model_id": "random_forest",
+    "models": {
+        "random_forest": {
+            "type": "random_forest",
+            "model_path": "models/advanced_ki.pkl",
+            "settings": {
+                "win_len": 155
+            }
+        },
+        "lstm": {
+            "type": "lstm",
+            "model_path": "models/lstm_demo.pth",
+            "settings": {}
+        }
+    }
 }
 
 # Strukturierte Definition aller verfügbaren Sonar-Modi

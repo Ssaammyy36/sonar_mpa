@@ -6,10 +6,9 @@ from logger import get_logger, setup_logging
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
 from visualisierung import Visualisierung
-from data_types import TestSzenario, Measurement
-from classifier import SonarClassifier
+from data_types import TestSzenario, Measurement, MeasurementSession
+from ai_models import create_ai_model, AbstractSonarModel
 import config
-
 
 class Steuerung:
     """
@@ -34,7 +33,26 @@ class Steuerung:
         self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
         self.visualisierung = Visualisierung(run_dir=self.run_dir)
-        self.classifier = SonarClassifier()
+        
+        # AI Modell laden
+        try:
+             ai_config = config.ANALYSIS_CONFIG
+             if ai_config.get("enable_classification", False):
+                 active_id = ai_config.get("active_model_id")
+                 if active_id and active_id in ai_config.get("models", {}):
+                     model_conf = ai_config["models"][active_id]
+                     self.classifier = create_ai_model(model_conf["type"], model_conf.get("settings", {}))
+                     self.classifier.load(model_conf["model_path"])
+                     self.logger.info(f"AI Modell '{active_id}' geladen.")
+                 else:
+                     self.logger.warning(f"Kein aktives AI Modell konfiguriert oder ID '{active_id}' ungültig.")
+                     self.classifier = None
+             else:
+                 self.classifier = None
+        except Exception as e:
+             self.logger.error(f"Fehler beim Laden der KI: {e}")
+             self.classifier = None
+
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
         # Schrittkette starten
@@ -140,22 +158,24 @@ class Steuerung:
 
         # 2. KI-Analyse (nur wenn analyze=True und wir Daten haben)
         prediction = None
-        if session.analyze and config.ANALYSIS_CONFIG["enable_classification"]:
-            data_low = None
-            data_high = None
+        # Nutze die Classifier-Instanz direkt
+        if session.analyze and self.classifier:
+            data_low = []
+            data_high = []
 
             # Versuche Low und High aus den gesammelten Daten zu finden
-            # (Nimmt aktuell einfach das erste gefundene Low und High)
+            # data ist eine Liste von Measurements (meist nur 1 Element pro Ping/Request)
             for data, settings in collected_data:
                 freq = settings.get("frequency")
-                if freq == "low" and data_low is None:
-                    data_low = data
-                elif freq == "high" and data_high is None:
-                    data_high = data
+                if freq == "low":
+                    data_low.extend(data)
+                elif freq == "high":
+                    data_high.extend(data)
             
             if data_low and data_high:
                 self.logger.info("--- Starte KI-Klassifizierung für Session---")
-                prediction = self.classifier.predict_paired(data_low, data_high)
+                # ACHTUNG: Interface ist jetzt predict() statt predict_paired()
+                prediction = self.classifier.predict(data_low, data_high)
                 if prediction:
                     self.logger.info(f"Klassifizierungsergebnis: {prediction}")
             else:
@@ -167,4 +187,3 @@ class Steuerung:
             if prediction:
                 settings["ml_prediction"] = prediction
             self.datenverarbeitung.append_ping_to_csv(data, settings)
-

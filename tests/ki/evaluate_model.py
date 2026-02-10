@@ -7,13 +7,15 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 
-# --- CONFIGURATION ---
 WINDOW_LEN = 155
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_ROOT = os.path.join(BASE_PATH, '../../data')
-MODEL_FILE = os.path.join(BASE_PATH, 'sonar_model.pkl')
+MODELS_DIR = os.path.join(BASE_PATH, 'models')
+MODEL_FILE = os.path.join(MODELS_DIR, 'sonar_model.pkl')
+MODEL_TO_LOAD = None        # Set to a specific path (e.g., 'models/sonar_model_rf_155.pkl') or None to auto-detect latest
 
 DATA_DIRS = [
     'messung_10_02_26'
@@ -255,28 +257,34 @@ if __name__ == "__main__":
             
         print(f"\nTotal Samples for Evaluation: {len(Y_all)}")
         
-        if len(Y_all) == 0:
-            raise RuntimeError("No valid samples extracted.")
-            
-        print(f"\nTotal Samples for Evaluation: {len(Y_all)}")
-        
-        # 3. Load Model (Auto-detect latest)
-        model_files = glob.glob(os.path.join(BASE_PATH, 'sonar_model_*.pkl'))
-        if not model_files:
-            # Fallback for backward compatibility
-            if os.path.exists(MODEL_FILE):
-                latest_model = MODEL_FILE
-            else:
-                raise FileNotFoundError("No 'sonar_model_*.pkl' files found.")
+        # 3. Load Model
+        if MODEL_TO_LOAD:
+            latest_model = MODEL_TO_LOAD
+            if not os.path.exists(latest_model):
+                raise FileNotFoundError(f"Specified model not found: {latest_model}")
         else:
-            # Sort by modification time, newest first
-            latest_model = max(model_files, key=os.path.getmtime)
+            # Auto-detect latest
+            model_files = glob.glob(os.path.join(MODELS_DIR, 'sonar_model_*.pkl'))
+            if not model_files:
+                # Fallback for old location
+                old_model_files = glob.glob(os.path.join(BASE_PATH, 'sonar_model_*.pkl'))
+                if old_model_files:
+                     model_files = old_model_files
+                elif os.path.exists(MODEL_FILE):
+                    latest_model = MODEL_FILE
+                    model_files = [MODEL_FILE] # Just to satisfy logic below if wanted, but simpler to set latest_model directly
+                else:
+                    raise FileNotFoundError(f"No 'sonar_model_*.pkl' files found in {MODELS_DIR} or {BASE_PATH}.")
+            
+            if model_files:
+                 # Sort by modification time, newest first
+                latest_model = max(model_files, key=os.path.getmtime)
             
         print(f"Loading model from {latest_model}...")
         checkpoint = joblib.load(latest_model)
         model = checkpoint['model']
-        pca = checkpoint['pca']
-        scaler = checkpoint['scaler']
+        pca = checkpoint.get('pca')  # Use .get() for backward compatibility
+        scaler = checkpoint.get('scaler') # Use .get() for backward compatibility
         
         # 4. Preprocess Pipeline
         NUM_STATS = 8

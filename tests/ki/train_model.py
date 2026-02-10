@@ -7,17 +7,20 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+
 from sklearn.decomposition import PCA
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, precision_recall_fscore_support
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
-# --- CONFIGURATION ---
-# --- CONFIGURATION ---
 # Feature Engineering Flags
-USE_SCALER = True   # Set to True to use StandardScaler on the window
-USE_PCA = False      # Set to True to use PCA on the window
+MODEL_TYPE = 'rf'    # Options: 'rf' (Random Forest), 'svm' (Support Vector Machine), 'knn' (K-Nearest Neighbors), 'mlp' (Multi Layer Perceptron), 'gb' (Gradient Boosting)
+USE_SCALER = True    # Set to True to use StandardScaler on the window
+USE_PCA = True      # Set to True to use PCA on the window
 PCA_VARIANCE = 0.24  # Explained variance ratio for PCA (if USE_PCA is True)
 
 # Signal Parameters
@@ -30,13 +33,15 @@ LF_V_START = 55      # Low Frequency Valley Start search
 RANDOM_STATE = 42
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_ROOT = os.path.join(BASE_PATH, '../../data')
-MODEL_FILE = os.path.join(BASE_PATH, 'sonar_model.pkl')
+MODELS_DIR = os.path.join(BASE_PATH, 'models')
+os.makedirs(MODELS_DIR, exist_ok=True)
+MODEL_FILE = os.path.join(MODELS_DIR, 'sonar_model.pkl')
 
 DATA_DIRS = [
     'messung_08_01_26',
     'messung_15_12_25',
-    'überprüfung_08_01_26',
-    'messung_09_02_26'
+    'messung_09_02_26',
+    'messung_10_02_26'
 ]
 
 # Expected columns for robust loading (ignoring broken headers)
@@ -51,6 +56,21 @@ plt.rcParams['font.size'] = 11
 
 
 # --- HELPER FUNCTIONS ---
+
+def get_model(model_name, random_state=42):
+    """Returns the requested classifier model."""
+    if model_name == 'rf':
+        return RandomForestClassifier(n_estimators=300, random_state=random_state)
+    elif model_name == 'svm':
+        return SVC(kernel='rbf', probability=True, random_state=random_state)
+    elif model_name == 'knn':
+        return KNeighborsClassifier(n_neighbors=5)
+    elif model_name == 'mlp':
+        return MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=500, random_state=random_state)
+    elif model_name == 'gb':
+        return GradientBoostingClassifier(n_estimators=200, learning_rate=0.1, random_state=random_state)
+    else:
+        raise ValueError(f"Unknown model: {model_name}")
 
 def natural_sort_key(s):
     """Sorts strings containing numbers naturally (e.g. S_2 before S_10)."""
@@ -306,6 +326,10 @@ def plot_signal_details(ax, sig, win_len, p_mask, v_start, title):
 # --- MAIN EXECUTION ---
 
 if __name__ == "__main__":
+    print(f"Configuration: Model={MODEL_TYPE}, Scaler={USE_SCALER}, PCA={USE_PCA} (Var={PCA_VARIANCE})")
+
+    print(f"Configuration: Model={MODEL_TYPE}, Scaler={USE_SCALER}, PCA={USE_PCA} (Var={PCA_VARIANCE})")
+
     try:
         # 1. Load Data
         df_all = load_all_data(DATA_ROOT, DATA_DIRS)
@@ -369,8 +393,8 @@ if __name__ == "__main__":
         X_test_final  = np.hstack([X_stats_test, wave_features_test])
         
         # 6. Model Training
-        print("Training Random Forest...")
-        model = RandomForestClassifier(n_estimators=300, random_state=RANDOM_STATE)
+        print(f"Training {MODEL_TYPE.upper()}...")
+        model = get_model(MODEL_TYPE, RANDOM_STATE)
         model.fit(X_train_final, Y_train)
         
         # 7. Evaluation
@@ -385,15 +409,15 @@ if __name__ == "__main__":
         
         # 8. Save Model
         # Dynamic Filename construction
-        config_str = f"{WINDOW_LEN}"
+        config_str = f"{MODEL_TYPE}"
         if USE_SCALER: config_str += "_scaled"
-        else: config_str += "_noScaler"
+        else: config_str += "_noscaling"
         
         if USE_PCA: config_str += f"_pca{int(PCA_VARIANCE*100) if PCA_VARIANCE < 1 else PCA_VARIANCE}"
-        else: config_str += "_noPCA"
+        else: config_str += "_nopca"
             
         dynamic_model_name = f"sonar_model_{config_str}.pkl"
-        dynamic_model_path = os.path.join(BASE_PATH, dynamic_model_name)
+        dynamic_model_path = os.path.join(MODELS_DIR, dynamic_model_name)
         
         model_data = {
             'model': model, 
@@ -403,13 +427,14 @@ if __name__ == "__main__":
             'config': {
                 'use_scaler': USE_SCALER, 
                 'use_pca': USE_PCA,
-                'window_len': WINDOW_LEN
+                'window_len': WINDOW_LEN,
+                'model_type': MODEL_TYPE
             }
         }
         
         joblib.dump(model_data, dynamic_model_path)
         
-        print(f"Model saved to: {dynamic_model_path} (Dynamic Name for Comparison)")
+        print(f"Model saved to: {dynamic_model_path}")
 
         # 9. Visualization - Separate Figures
         print("\nVisualizing Results...")

@@ -10,6 +10,17 @@ class TestSzenario:
     frequency: str = "low"
 
 @dataclass
+class MeasurementSession:
+    """
+    Definiert eine Gruppe von Tests, die zusammengehören (z.B. HF + LF Messung).
+    Kann mehrfach wiederholt werden.
+    """
+    tasks: List[TestSzenario]
+    analyze: bool = True
+    repetitions: int = 1
+
+
+@dataclass
 class Measurement:
     """Basisklasse für alle Messungen."""
     timestamp: datetime

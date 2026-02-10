@@ -36,10 +36,11 @@ class AbstractSonarModel(ABC):
         """
         pass
 
-# --- Random Forest Model (Legacy) ---
-class RandomForestModel(AbstractSonarModel):
+# --- Feature Based Model (Base) ---
+class FeatureBasedModel(AbstractSonarModel):
     """
-    Implementiert die klassische Feature-Extraction-Pipeline und einen ML-Classifier (z.B. Random Forest).
+    Basisklasse für alle Modelle, die auf klassischer Feature-Extraction basieren.
+    Implementiert Laden, Signalverarbeitung und Vorhersage zentral.
     """
     def __init__(self, settings: Dict[str, Any] = None):
         self.logger = get_logger(self.__class__.__name__)
@@ -51,16 +52,17 @@ class RandomForestModel(AbstractSonarModel):
     def load(self, model_path: str):
         try:          
             data = joblib.load(model_path)
+
             if isinstance(data, dict):
                 self.model = data.get("model")
                 self.scaler = data.get("scaler")
                 self.pca = data.get("pca")
-                self.logger.info("Random Forest Modell geladen.")
+                self.logger.info(f"{self.__class__.__name__} geladen (mit Scaler/PCA).")
             else:
                 self.model = data
-                self.logger.warning("Altes Modellformat geladen (ohne Scaler/PCA).")
+                self.logger.warning(f"{self.__class__.__name__} geladen (ohne Scaler/PCA - altes Format oder direktes Modell).")
         except Exception as e:
-            self.logger.error(f"Fehler beim Laden des RF-Modells: {e}")
+            self.logger.error(f"Fehler beim Laden von {self.__class__.__name__}: {e}")
 
     def process_signal(self, sig: np.ndarray, win_len: int, p_mask: int, v_start: int) -> Tuple[List[float], np.ndarray]:
         """
@@ -138,27 +140,28 @@ class RandomForestModel(AbstractSonarModel):
             return [0.0, 0.0, 0.0, 0.0], np.zeros(win_len)
 
     def predict(self, data_low: List[Measurement], data_high: List[Measurement]) -> Optional[str]:
-
-        # Umwandeln der Daten in numpy Arrays
-        m_low = data_low[0]
-        m_high = data_high[0]
-        
-        sig_hf = np.array(m_high.data_points)
-        sig_lf = np.array(m_low.data_points)
-
-        # Features berechnen und zusammenfügen
-        win_len = self.settings.get("win_len", 155)
-        p_mask_hf = self.settings.get("p_mask_hf", 30)
-        v_start_hf = self.settings.get("v_start_hf", 20)
-        p_mask_lf = self.settings.get("p_mask_lf", 78)
-        v_start_lf = self.settings.get("v_start_lf", 55)
-
-        stats_hf, win_hf = self.process_signal(sig_hf, win_len, p_mask_hf, v_start_hf)
-        stats_lf, win_lf = self.process_signal(sig_lf, win_len, p_mask_lf, v_start_lf)
-        stats = np.concatenate([stats_hf, stats_lf])
-        wave = np.concatenate([win_hf, win_lf])
-        
         try:
+            if not self.model:
+                self.logger.warning(f"Kein Modell geladen ({self.__class__.__name__}).")
+                return None
+
+            m_low = data_low[0]
+            m_high = data_high[0]
+            
+            sig_hf = np.array(m_high.data_points)
+            sig_lf = np.array(m_low.data_points)
+
+            win_len = self.settings.get("win_len", 155)
+            p_mask_hf = self.settings.get("p_mask_hf", 30)
+            v_start_hf = self.settings.get("v_start_hf", 20)
+            p_mask_lf = self.settings.get("p_mask_lf", 78)
+            v_start_lf = self.settings.get("v_start_lf", 55)
+
+            stats_hf, win_hf = self.process_signal(sig_hf, win_len, p_mask_hf, v_start_hf)
+            stats_lf, win_lf = self.process_signal(sig_lf, win_len, p_mask_lf, v_start_lf)
+            stats = np.concatenate([stats_hf, stats_lf])
+            wave = np.concatenate([win_hf, win_lf])
+            
             if self.scaler and self.pca:
                 wave_std = self.scaler.transform(wave.reshape(1, -1))
                 wave_pca = self.pca.transform(wave_std)
@@ -166,7 +169,6 @@ class RandomForestModel(AbstractSonarModel):
             else:
                  features = np.concatenate([stats, wave]).reshape(1, -1)
 
-            # Vorhersage & Wahrscheinlichkeiten
             prediction = self.model.predict(features)[0]
             log_msg = f"Vorhersage: {prediction}"
 
@@ -183,101 +185,33 @@ class RandomForestModel(AbstractSonarModel):
 
             return str(prediction)
         except Exception as e:
-            self.logger.error(f"Fehler bei RF-Prediction: {e}")
+            self.logger.error(f"Fehler bei Prediction ({self.__class__.__name__}): {e}")
             return None
 
-# --- LSTM Model ---
-if TORCH_AVAILABLE:
-    class SimpleLSTM(nn.Module):
-        def __init__(self, input_size=1, hidden_size=32, num_layers=1, num_classes=3):
-            super(SimpleLSTM, self).__init__()
-            self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-            self.fc = nn.Linear(hidden_size, num_classes)
-            
-        def forward(self, x):
-            h0 = torch.zeros(1, x.size(0), 32).to(x.device) 
-            c0 = torch.zeros(1, x.size(0), 32).to(x.device)
-            out, _ = self.lstm(x, (h0, c0))
-            out = self.fc(out[:, -1, :])
-            return out
-else:
-    class SimpleLSTM: pass
+# --- Concrete Models ---
+class RandomForestModel(FeatureBasedModel):
+    pass
 
-class LSTMModel(AbstractSonarModel):
-    def __init__(self, settings: Dict[str, Any] = None):
-        self.logger = get_logger(self.__class__.__name__)
-        self.settings = settings or {}
-        self.model = None
-        self.device = torch.device('cpu') if TORCH_AVAILABLE else None
-        self.labels = {}
-        self.seq_len = 300 
-        self.mean = 0.0
-        self.std = 1.0
+class MLPModel(FeatureBasedModel):
+    pass
 
-    def load(self, model_path: str):
-        if not TORCH_AVAILABLE:
-            self.logger.error("PyTorch nicht verfügbar.")
-            return
+class SVMModel(FeatureBasedModel):
+    pass
 
-        try:
-             # Try relative to project root
-            if not os.path.exists(model_path):
-                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                abs_path = os.path.join(base_dir, model_path)
-                if os.path.exists(abs_path):
-                    model_path = abs_path
-
-            checkpoint = torch.load(model_path, map_location=self.device)
-            self.seq_len = checkpoint.get("input_len", 300)
-            self.labels = checkpoint.get("labels", {})
-            self.mean = checkpoint.get("mean", 0.0)
-            self.std = checkpoint.get("std", 1.0)
-            
-            self.model = SimpleLSTM(input_size=1, hidden_size=32, num_classes=3) 
-            self.model.load_state_dict(checkpoint["model_state"])
-            self.model.eval()
-            self.logger.info(f"LSTM geladen (Seq={self.seq_len}, Mean={self.mean:.2f})")
-            
-        except Exception as e:
-            self.logger.error(f"Fehler beim Laden des LSTM: {e}")
-
-    def _preprocess(self, signal: List[int], target_len: int) -> np.ndarray:
-        arr = np.array(signal)
-        current_len = len(arr)
-        if current_len == target_len: return arr
-        elif current_len > target_len: return arr[:target_len]
-        else:
-            padding = np.zeros(target_len - current_len)
-            return np.concatenate([arr, padding])
-
-    def predict(self, data_low: List[Measurement], data_high: List[Measurement]) -> Optional[str]:
-        if not TORCH_AVAILABLE or not self.model: return None
-        if not data_high or not isinstance(data_high[0], EchogramMeasurement): return None
-            
-        raw_signal = data_high[0].data_points
-        processed_sig = self._preprocess(raw_signal, self.seq_len)
-        
-        if self.std > 1e-6:
-             processed_sig = (processed_sig - self.mean) / self.std
-
-        input_tensor = torch.tensor(processed_sig, dtype=torch.float32).unsqueeze(0).unsqueeze(2)
-        
-        with torch.no_grad():
-            outputs = self.model(input_tensor)
-            _, predicted_idx = torch.max(outputs, 1)
-            
-        idx = predicted_idx.item()
-        return self.labels.get(idx, str(idx))
+class RnnModel(FeatureBasedModel):
+    pass
 
 # --- Factory Function ---
 def create_ai_model(config_type: str, settings: Dict[str, Any]) -> AbstractSonarModel:
     if config_type == "random_forest":
         return RandomForestModel(settings)
-    elif config_type == "lstm":
-        return LSTMModel(settings)
-    elif config_type == "legacy_feature_based": # Backward compat
+    elif config_type == "mlp":
+        return MLPModel(settings)
+    elif config_type == "svm":
+        return SVMModel(settings)
+    elif config_type == "rnn":
+        return RnnModel(settings)
+    elif config_type == "legacy_feature_based": 
         return RandomForestModel(settings)
-    elif config_type == "lstm_demo": # Backward compat
-        return LSTMModel(settings)
     else:
         raise ValueError(f"Unbekannter Modell-Typ: {config_type}")

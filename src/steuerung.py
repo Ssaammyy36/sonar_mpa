@@ -16,21 +16,20 @@ class Steuerung:
     Steuert den gesamten Ablauf von Sonar-Messungen.
     """
 
-    def __init__(self, geplante_tests: List[TestSzenario]):
+    def __init__(self, geplante_sessions: List['MeasurementSession']):
         """
         Initialisiert die Steuerung und alle Kernkomponenten.
 
         Args:
-            geplante_tests (List[TestSzenario]): Eine Liste von TestSzenario-Objekten.
+            geplante_sessions (List[MeasurementSession]): Eine Liste von Session-Objekten.
         """
+        # Logger Verzeichnis
         self.run_dir = Path('logs') / datetime.now().strftime('%Y%m%d_%H%M%S')
-        
-        # Verzeichnis erstellen und Logging konfigurieren
         Path(self.run_dir).mkdir(parents=True, exist_ok=True)
         setup_logging(self.run_dir)
 
-        self.geplante_tests = geplante_tests
-
+        # Initialisierung
+        self.geplante_sessions = geplante_sessions
         self.logger = get_logger(__name__)
         self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
@@ -110,77 +109,77 @@ class Steuerung:
 
     def run_tests(self):
         """
-        Führt eine Liste von Tests nacheinander (paarweise) aus.
+        Führt die geplanten Sessions und deren Wiederholungen aus.
         """
-        self.logger.info(f"--- Sonar-Anwendung wird gestartet, {len(self.geplante_tests)} Test(s) geplant. ---")
-
-        if not self.geplante_tests:
-            self.logger.warning("Keine Tests zur Ausführung angegeben.")
-            return
-
+        self.logger.info(f"Starte {len(self.geplante_sessions)} Session(s).")
         if self.sonar.verbinden():
-            self.logger.info("Sonar erfolgreich verbunden.")
+            self.logger.debug("Sonar erfolgreich verbunden.")
 
-            # Iteriere in 2er Schritten durch die Liste
-            for i in range(0, len(self.geplante_tests), 2):
-                # Prüfen ob ein Paar vollständig ist
-                if i + 1 >= len(self.geplante_tests):
-                    self.logger.warning(f"Letzter Test {self.geplante_tests[i]} hat keinen Partner. Wird nicht ausgeführt.")
-                    continue
+            global_test_counter = 0
 
-                test1 = self.geplante_tests[i]
-                test2 = self.geplante_tests[i+1]
+            for session_idx, session in enumerate(self.geplante_sessions):
+                self.logger.info(f"=== Starte Session {session_idx + 1} ({len(session.tasks)} Tasks, {session.repetitions} Wiederholungen) ===")
+                
+                for rep in range(session.repetitions):
+                    self.logger.info(f">> Wiederholung {rep + 1}/{session.repetitions}")
+                    self.run_session_iteration(session, global_test_counter)
+                    global_test_counter += 1
 
-                self.run_test_pair(test1, test2, start_index=i)
-
+            self.logger.info("Alle geplanten Tests abgeschlossen.")
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
         else:
             self.logger.error("Anwendung konnte nicht gestartet werden, da das Sonar nicht verbunden werden konnte.")
 
-        self.logger.info("Alle geplanten Tests abgeschlossen. Sonar-Anwendung beendet.")
-
-    def run_test_pair(self, test1: TestSzenario, test2: TestSzenario, start_index: int):
+    def run_session_iteration(self, session: 'MeasurementSession', session_id: int):
         """
-        Führt zwei Tests nacheinander aus, kombiniert die Daten für die KI-Klassifizierung
-        und speichert die Ergebnisse.
+        Führt einen einzelnen Durchlauf einer Session aus.
         """
-        self.logger.info(f"--- Führe Test-Paar aus: Index {start_index} & {start_index+1} ---")
+        collected_data = [] # List of tuple (data, settings)
 
-        # 1. Messungen durchführen (ohne sofort in CSV zu speichern)     
-        data1, settings1 = self.run_single_test(test1.mode_id, test1.frequency, test1.class_name, start_index, save_result=False)
-        data2, settings2 = self.run_single_test(test2.mode_id, test2.frequency, test2.class_name, start_index + 1, save_result=False)
-
-        if not data1 or not data2:
-            self.logger.error("Fehler: Eine der Messungen im Paar war fehlerhaft. Daten werden ohne KI-Prediction gespeichert.")
-            if data1: self.datenverarbeitung.append_ping_to_csv(data1, settings1)
-            if data2: self.datenverarbeitung.append_ping_to_csv(data2, settings2)
-            return
-
-        # 2. Daten zuordnen (Low/High)
-        data_low, data_high = None, None
-        
-        if settings1.get("frequency") == "low":
-            data_low = data1
-        elif settings1.get("frequency") == "high":
-            data_high = data1
+        # 1. Alle Tasks der Session ausführen
+        for i, task in enumerate(session.tasks):
+            # Test-ID generieren für eindeutige Plots/Logs
+            test_number = session_id * 100 + i 
             
-        if settings2.get("frequency") == "low":
-            data_low = data2
-        elif settings2.get("frequency") == "high":
-            data_high = data2
+            # Ergebnis erst speichern, wenn wir wissen ob Prediction kommt oder nicht
+            data, settings = self.run_single_test(
+                task.mode_id, task.frequency, task.class_name, 
+                test_number, save_result=False
+            )
+            
+            if data:
+                collected_data.append((data, settings))
+            else:
+                self.logger.error(f"Task {i} in Session fehlgeschlagen. Session wird unvollständig gespeichert.")
 
+        # 2. KI-Analyse (nur wenn analyze=True und wir Daten haben)
         prediction = None
-        # 3. KI-Klassifizierung (nur wenn beide Frequenzen vorhanden sind)
-        if data_low and data_high and config.ANALYSIS_CONFIG["enable_classification"]:
-            self.logger.info("Starte KI-Klassifizierung für LF/HF Paar...")
-            prediction = self.classifier.predict_paired(data_low, data_high)
-            
-            if prediction:
-                settings1["ml_prediction"] = prediction
-                settings2["ml_prediction"] = prediction
-                self.logger.info(f"Klassifizierungsergebnis für Paar: {prediction}")
+        if session.analyze and config.ANALYSIS_CONFIG["enable_classification"]:
+            data_low = None
+            data_high = None
 
-        # 4. Ergebnisse speichern
-        self.datenverarbeitung.append_ping_to_csv(data1, settings1)
-        self.datenverarbeitung.append_ping_to_csv(data2, settings2)
+            # Versuche Low und High aus den gesammelten Daten zu finden
+            # (Nimmt aktuell einfach das erste gefundene Low und High)
+            for data, settings in collected_data:
+                freq = settings.get("frequency")
+                if freq == "low" and data_low is None:
+                    data_low = data
+                elif freq == "high" and data_high is None:
+                    data_high = data
+            
+            if data_low and data_high:
+                self.logger.info("Starte KI-Klassifizierung für Session...")
+                prediction = self.classifier.predict_paired(data_low, data_high)
+                if prediction:
+                    self.logger.info(f"Klassifizierungsergebnis: {prediction}")
+            else:
+                if session.analyze: # Nur warnen, wenn Analyse erwartet war
+                    self.logger.warning("Konnte keine Low/High Paarung für Analyse finden (Daten fehlen).")
+
+        # 3. Ergebnisse final speichern (mit Prediction falls vorhanden)
+        for data, settings in collected_data:
+            if prediction:
+                settings["ml_prediction"] = prediction
+            self.datenverarbeitung.append_ping_to_csv(data, settings)
+

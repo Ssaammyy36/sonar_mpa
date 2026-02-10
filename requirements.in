@@ -1,3 +1,4 @@
 pyserial
 matplotlib
 struct
+torch

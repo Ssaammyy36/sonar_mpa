@@ -6,10 +6,9 @@ from logger import get_logger, setup_logging
 from sonar import Sonar
 from datenverarbeitung import Datenverarbeitung
 from visualisierung import Visualisierung
-from data_types import TestSzenario, Measurement
-from classifier import SonarClassifier
+from data_types import TestSzenario, Measurement, MeasurementSession
+from ai_models import create_ai_model, AbstractSonarModel
 import config
-
 
 class Steuerung:
     """
@@ -34,7 +33,21 @@ class Steuerung:
         self.sonar = Sonar()
         self.datenverarbeitung = Datenverarbeitung(run_dir=self.run_dir)
         self.visualisierung = Visualisierung(run_dir=self.run_dir)
-        self.classifier = SonarClassifier()
+        
+        try:
+            # AI Modell laden
+            ai_config = config.ANALYSIS_CONFIG
+            if ai_config.get("enable_classification", False):
+                 active_id = ai_config.get("active_model_id")
+                 model_conf = ai_config["models"][active_id]
+                 self.classifier = create_ai_model(model_conf["type"], model_conf.get("settings", {}))
+                 self.classifier.load(model_conf["model_path"])
+            else:
+                 self.classifier = None
+        except Exception as e:
+            self.logger.error(f"Fehler beim Laden der KI: {e}")
+            self.classifier = None
+
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
         # Schrittkette starten
@@ -110,11 +123,11 @@ class Steuerung:
                 self.logger.info(f"=== Starte Session {session_idx + 1} ({len(session.tasks)} Tasks, {session.repetitions} Wiederholungen) ===")
                 
                 for rep in range(session.repetitions):
-                    self.logger.info(f"Wiederholung {rep + 1}/{session.repetitions}")
+                    self.logger.info(f"=== Wiederholung {rep + 1}/{session.repetitions} === \n")
                     self.execute_session(session, global_test_counter)
                     global_test_counter += 1
 
-            self.logger.info("Alle geplanten Tests abgeschlossen.")
+            self.logger.info("=== Alle geplanten Tests abgeschlossen. === \n")
             self.sonar.trennen()
             self.logger.info("Sonarverbindung getrennt.")
         else:
@@ -138,26 +151,23 @@ class Steuerung:
             else:
                 self.logger.error(f"Task {i} in Session fehlgeschlagen. Session wird unvollständig gespeichert.")
 
-        # 2. KI-Analyse (nur wenn analyze=True und wir Daten haben)
+        # 2. KI-Analyse 
         prediction = None
-        if session.analyze and config.ANALYSIS_CONFIG["enable_classification"]:
-            data_low = None
-            data_high = None
+        if session.analyze and self.classifier:
+            data_low = []
+            data_high = []
 
             # Versuche Low und High aus den gesammelten Daten zu finden
-            # (Nimmt aktuell einfach das erste gefundene Low und High)
             for data, settings in collected_data:
                 freq = settings.get("frequency")
-                if freq == "low" and data_low is None:
-                    data_low = data
-                elif freq == "high" and data_high is None:
-                    data_high = data
+                if freq == "low":
+                    data_low.extend(data)
+                elif freq == "high":
+                    data_high.extend(data)
             
             if data_low and data_high:
                 self.logger.info("--- Starte KI-Klassifizierung für Session---")
-                prediction = self.classifier.predict_paired(data_low, data_high)
-                if prediction:
-                    self.logger.info(f"Klassifizierungsergebnis: {prediction}")
+                prediction = self.classifier.predict(data_low, data_high)
             else:
                 if session.analyze: # Nur warnen, wenn Analyse erwartet war
                     self.logger.warning("Konnte keine Low/High Paarung für Analyse finden (Daten fehlen).")
@@ -167,4 +177,3 @@ class Steuerung:
             if prediction:
                 settings["ml_prediction"] = prediction
             self.datenverarbeitung.append_ping_to_csv(data, settings)
-

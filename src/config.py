@@ -44,8 +44,13 @@ ANALYSIS_CONFIG = {
             }
         },
         "lstm": {
-            "type": "lstm_demo",
-            "model_path": "models/lstm_demo.pth",
+            "type": "lstm",
+            "model_path": "???",
+            "settings": {}
+        },
+        "svm": {
+            "type": "svm",
+            "model_path": "???",
             "settings": {}
         }
     }

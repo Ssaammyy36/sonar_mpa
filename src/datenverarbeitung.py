@@ -347,6 +347,6 @@ class Datenverarbeitung:
                 if not file_exists:
                     writer.writerow(header)
                 writer.writerow(row_data)
-            self.logger.info(f"Daten erfolgreich in '{filepath}' geschrieben.")
+            self.logger.debug(f"Daten erfolgreich in '{filepath}' geschrieben.")
         except IOError as e:
             self.logger.error(f"Fehler beim Schreiben der CSV-Datei '{filepath}': {e}")

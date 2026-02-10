@@ -56,7 +56,7 @@ def setup_logging(log_dir: str):
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     _logging_configured = True
-    logging.info(f"Logging konfiguriert. Log-Datei unter: {log_file_path}")
+    logging.debug(f"Logging konfiguriert. Log-Datei unter: {log_file_path}")
 
 
 def get_logger(name: str) -> logging.Logger:

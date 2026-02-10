@@ -68,12 +68,12 @@ class Sonar:
 
         # Wende spezifische Modus-Einstellungen an, falls vorhanden
         if settings:
-            self.logger.info("Wende spezifische Modus-Einstellungen an:")
+            self.logger.debug("Wende spezifische Modus-Einstellungen an:")
             for key, value in settings.items():
                 # `read_timeout` ist eine reine Software-Einstellung und wird nicht an das Sonar gesendet
                 if key != "read_timeout":
                     self.echosounder.SetValue(key, str(value))
-                    self.logger.info(f"  -> {key}: {value}")
+                    self.logger.debug(f"  -> {key}: {value}")
 
     def daten_lesen(self, dauer: float = 2.0) -> Optional[bytes]:
         """Startet das Pingen, liest für eine bestimmte Dauer und gibt die Daten zurück. Print mit hex"""

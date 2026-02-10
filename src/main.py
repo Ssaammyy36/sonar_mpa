@@ -15,7 +15,7 @@ if __name__ == "__main__":
                     TestSzenario(class_name="Sand", mode_id="4", frequency="low"),
                     TestSzenario(class_name="Sand", mode_id="4", frequency="high")
                 ],
-                repetitions=10, 
+                repetitions=2, 
                 analyze=True
             ),
         ]

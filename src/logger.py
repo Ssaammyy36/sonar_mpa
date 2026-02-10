@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+import config
 
 # Globale Variable, um zu prüfen, ob das Logging bereits konfiguriert wurde
 _logging_configured = False
@@ -28,7 +29,13 @@ def setup_logging(log_dir: str):
 
     # Root-Logger konfigurieren
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    
+    # Level aus Config lesen (Default: DEBUG)
+    level_name = config.LOGGING_CONFIG.get("logger_level", "DEBUG")
+    # Sicheres Konvertieren des Strings in ein Logging-Level
+    level = getattr(logging, level_name.upper(), logging.DEBUG)
+    
+    root_logger.setLevel(level)
 
     # Alle bestehenden Handler entfernen, um Duplikate zu vermeiden
     for handler in root_logger.handlers[:]:

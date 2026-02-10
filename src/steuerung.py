@@ -37,6 +37,7 @@ class Steuerung:
         self.classifier = SonarClassifier()
         self.logger.debug("Steuerung und alle Komponenten initialisiert.")
 
+        # Schrittkette starten
         self.run_tests()
 
     def run_single_test(self, mode_id: str, frequency: str, class_name: str, test_number: int, save_result: bool = True) -> Tuple[List[Measurement], Dict]:
@@ -53,15 +54,7 @@ class Steuerung:
             Tuple[List[Measurement], Dict]: Die gemessenen Daten und die verwendeten Einstellungen.
         """
         # 1. Konfiguration laden
-        if class_name and class_name not in config.CLASSES:
-            self.logger.error(f"Warnung: Unbekannte Klasse '{class_name}'. Erlaubt sind: {config.CLASSES}")
-            return [], {}
-
         mode_config = config.MODES.get(mode_id)
-        if not mode_config:
-            self.logger.error(f"Testmodus '{mode_id}' ist in config.py nicht definiert!")
-            return [], {}
-
         mode_name = mode_config["name"]
         output_mode_id = mode_config["output_mode_id"]
         data_type = mode_config["data_type"]
@@ -114,14 +107,13 @@ class Steuerung:
         self.logger.info(f"Starte {len(self.geplante_sessions)} Session(s).")
         if self.sonar.verbinden():
             self.logger.debug("Sonar erfolgreich verbunden.")
-
             global_test_counter = 0
 
             for session_idx, session in enumerate(self.geplante_sessions):
                 self.logger.info(f"=== Starte Session {session_idx + 1} ({len(session.tasks)} Tasks, {session.repetitions} Wiederholungen) ===")
                 
                 for rep in range(session.repetitions):
-                    self.logger.info(f">> Wiederholung {rep + 1}/{session.repetitions}")
+                    self.logger.info(f"Wiederholung {rep + 1}/{session.repetitions}")
                     self.run_session_iteration(session, global_test_counter)
                     global_test_counter += 1
 
@@ -169,7 +161,7 @@ class Steuerung:
                     data_high = data
             
             if data_low and data_high:
-                self.logger.info("Starte KI-Klassifizierung für Session...")
+                self.logger.info("--- Starte KI-Klassifizierung für Session---")
                 prediction = self.classifier.predict_paired(data_low, data_high)
                 if prediction:
                     self.logger.info(f"Klassifizierungsergebnis: {prediction}")

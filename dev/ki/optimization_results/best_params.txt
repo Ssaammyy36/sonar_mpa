@@ -2,32 +2,32 @@ OPTIMIZATION RESULTS
 ====================
 
 Model: RF
-  F1-Score: 0.8183 (Accuracy: 0.7000)
-  Scaler: StandardScaler
-  PCA Variance: 0.99 (Components used: 50)
+  F1-Score: 0.7997 (Accuracy: 0.8000)
+  Scaler: None
+  PCA Variance: None (Components used: 0)
   Hyperparameters: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 300}
 ------------------------------
 Model: SVM
-  F1-Score: 0.4977 (Accuracy: 0.5667)
-  Scaler: None
-  PCA Variance: 0.24 (Components used: 2)
-  Hyperparameters: {'C': 10, 'gamma': 'scale', 'kernel': 'rbf'}
+  F1-Score: 0.7834 (Accuracy: 0.7000)
+  Scaler: StandardScaler
+  PCA Variance: 0.99 (Components used: 62)
+  Hyperparameters: {'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}
 ------------------------------
 Model: KNN
-  F1-Score: 0.5026 (Accuracy: 0.7000)
-  Scaler: None
-  PCA Variance: None (Components used: 310)
-  Hyperparameters: {'metric': 'manhattan', 'n_neighbors': 11, 'weights': 'uniform'}
+  F1-Score: 0.6954 (Accuracy: 0.5667)
+  Scaler: StandardScaler
+  PCA Variance: None (Components used: 0)
+  Hyperparameters: {'metric': 'manhattan', 'n_neighbors': 11, 'weights': 'distance'}
 ------------------------------
 Model: GB
-  F1-Score: 0.8175 (Accuracy: 0.6667)
-  Scaler: StandardScaler
-  PCA Variance: 0.95 (Components used: 32)
-  Hyperparameters: {'learning_rate': 0.1, 'max_depth': 3, 'n_estimators': 100}
+  F1-Score: 0.7176 (Accuracy: 0.7667)
+  Scaler: None
+  PCA Variance: None (Components used: 0)
+  Hyperparameters: {'learning_rate': 0.1, 'max_depth': 3, 'n_estimators': 200}
 ------------------------------
 Model: MLP
-  F1-Score: 0.3980 (Accuracy: 0.3333)
+  F1-Score: 0.7917 (Accuracy: 0.8000)
   Scaler: StandardScaler
-  PCA Variance: None (Components used: 310)
-  Hyperparameters: {'activation': 'tanh', 'hidden_layer_sizes': (100,), 'learning_rate_init': 0.001}
+  PCA Variance: None (Components used: 0)
+  Hyperparameters: {'activation': 'tanh', 'hidden_layer_sizes': (100,), 'learning_rate_init': 0.01}
 ------------------------------

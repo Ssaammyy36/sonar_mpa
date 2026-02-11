@@ -2,28 +2,39 @@
 ---
 config:
   theme: mc
+  look: neo
 ---
 sequenceDiagram
     participant Ctrl as Steuerung
     participant Sonar as Sonar (HAL)
-    participant Device as Echosounder API
+    participant Device as Echosounder
 
-    %% 1. Konfiguration
+    critical Verbindungsaufbau
     Ctrl->>Sonar: verbinden()
-    Sonar-->>Ctrl: boolean
-    Ctrl->>Sonar: konfigurieren(Modus, Frequenz)
-    Sonar->>Device: SendCommand()
-    %% 2. Datenerfassung
-    Sonar->>Device: SetValue()
-    Ctrl->>Sonar: daten_lesen(Dauer)
-    Sonar->>Device: Start()
-    loop Polling
-      Sonar->>Sonar: sleep(dauer)
-      Sonar->>Device: ReadData(Buffer)
-        Device-->>Sonar: raw_bytes
+    Sonar->>Device: Detect()
+    Device-->>Sonar: bool
+    Sonar-->>Ctrl: bool
     end
-    Sonar->>Device: Stop()
-    Sonar-->>Ctrl: sensor_daten (bytes)
 
-    %% 3. Verarbeitung
+    critical Konfiguration
+    Ctrl->>Sonar: konfigurieren()
+    Sonar->>Device: SendCommand()
+    Sonar->>Device: SetValue()
+    end
+
+    critical Datenerfassung
+    Ctrl->>Sonar: daten_lesen()
+    Sonar->>Device: Start()
+    par 
+        Sonar->>Sonar: sleep()
+    and 
+        loop 
+            Device->>Device: Ping()
+        end
+    end
+    Sonar->>Device: ReadData()
+    Device-->>Sonar: bytes
+    Sonar->>Device: Stop()
+    Sonar-->>Ctrl: bytes
+    end
 ```

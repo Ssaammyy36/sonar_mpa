@@ -9,20 +9,18 @@ sequenceDiagram
     participant Sonar as Sonar (HAL)
     participant Device as Echosounder
 
-    critical Verbindungsaufbau
+    %% Verbindungsaufbau
     Ctrl->>Sonar: verbinden()
     Sonar->>Device: Detect()
     Device-->>Sonar: bool
     Sonar-->>Ctrl: bool
-    end
-
-    critical Konfiguration
+        
+    %% Konfiguration
     Ctrl->>Sonar: konfigurieren()
     Sonar->>Device: SendCommand()
     Sonar->>Device: SetValue()
-    end
-
-    critical Datenerfassung
+    
+    %% Datenlesung
     Ctrl->>Sonar: daten_lesen()
     Sonar->>Device: Start()
     par 
@@ -36,5 +34,5 @@ sequenceDiagram
     Device-->>Sonar: bytes
     Sonar->>Device: Stop()
     Sonar-->>Ctrl: bytes
-    end
+    
 ```

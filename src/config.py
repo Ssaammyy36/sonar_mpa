@@ -85,7 +85,7 @@ MODES = {
         "description": "Verarbeitet NMEA-Tiefendaten ($SDDBT)."
     },
     "4": {
-        "name": "12bit-Echogram",
+        "name": "12bit-Echogram",  
         "output_mode_id": "4",
         "data_type": "echogram",
         "description": "Verarbeitet 12-Bit Echogramm-Daten (ASCII) und stellt sie grafisch dar.",

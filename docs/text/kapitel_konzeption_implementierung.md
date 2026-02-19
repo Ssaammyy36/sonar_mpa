@@ -1,41 +1,48 @@
 \chapter{Konzeption und Implementierung}
 
-\section{Systemarchitektur und Hardware}
+\section{Technische Spezifikation des Sonarsensors}
 
-\textcolor{red}{\textbf{TODO: Hier müssen die spezifischen Parameter des Versuchsaufbaus eingetragen werden. \\
-Beispiel: \\
-Der Versuchsaufbau befand sich in einem Wassertank mit den Maßen $L \times B \times H$. Der Sensor wurde in einer fixierten Höhe von \SI{XX}{\centi\meter} über dem Boden positioniert.}}
-
-\subsection{Technische Spezifikation des Sonarsensors}
-Als Messinstrument dient der Single-Beam Echosounder ECT D052 der Firma EchoLogger. Dieses Gerät ist als Dual-Frequency-System konzipiert, welches akustische Signale sowohl im Hochfrequenzbereich (\SI{200}{\kilo\hertz}) als auch im Niederfrequenzbereich (\SI{50}{\kilo\hertz}) emittieren kann. Die Anbindung erfolgt über eine RS-232/RS-485 Schnittstelle, die mittels eines Adapters als virtueller \ac{COM}-Port an das Host-System angebunden wird. Dieser Ansatz ermöglicht eine direkte Low-Level-Kommunikation mit geringer Latenz \cite{eofe_ultrasonics_co_ltd_user_nodate}.
+%% SensorTyp
+Als zentrales Messinstrumentarium dieser Arbeit kommt das Modell \textit{ECT D052} des Herstellers EchoLogger zum Einsatz. Konzipiert als Dual-Frequency Single Beam Echosounder, ermöglicht das System den operativen Betrieb bei Frequenzen von \SI{200}{\kilo\hertz} oder \SI{50}{\kilo\hertz}. Die datentechnische Anbindung an das Host-System wird über eine RS-232/RS-485-Schnittstelle realisiert, welche mittels Adapter auf den USB-Standard umgesetzt wird \cite{eofe_ultrasonics_co_ltd_user_nodate}.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\linewidth]{content/images/sonar_ect_d052.jpg}
-    \caption{\centering Sonarsensor EchoLogger ECT D052 \cite{noauthor_dual_nodate}}
+    \caption{\centering Sonarsensor EchoLogger ECT D052 \cite{eofe_ultrasonics_co_ltd_user_nodate}}
     \label{fig:sonar_ect_d052}
 \end{figure}
 
-Die physikalischen Eigenschaften der verwendeten Frequenzen sind ausschlaggebend für die Klassifizierungsmöglichkeiten:
+%% Funktion
+Die hochfrequente Signalkomponente (\SI{200}{\kilo\hertz}) weist aufgrund ihrer kurzen Wellenlänge eine hohe Sensitivität gegenüber der Oberflächenbeschaffenheit des Sediments auf, besitzt jedoch eine geringe Penetrationstiefe. Folglich werden primär Informationen über die Topographie der Sedimentoberfläche erfasst.
 
-\begin{itemize}
-    \item \textbf{Hochfrequenz (\SI{200}{\kilo\hertz}):} \\
-    Bei einer Schallgeschwindigkeit im Wasser von ca. $c \approx \SI{1500}{\meter\per\second}$ ergibt sich eine Wellenlänge von $\lambda = \frac{c}{f} \approx \SI{7,5}{\milli\meter}$. Diese kurze Wellenlänge führt zu einer hohen Auflösung der Oberflächenstruktur, resultiert jedoch in einer geringen Eindringtiefe in das Sediment. Das Rückstreusignal wird primär durch die Rauigkeit der Sedimentoberfläche (Interface Scattering) dominiert.
+Im Gegensatz dazu dringt das niederfrequente Signal (\SI{50}{\kilo\hertz}) signifikant tiefer in das Substrat ein. Da es an der Grenzschicht weniger stark gestreut wird, liefert es detaillierte Informationen über die innere Beschaffenheit und Dichte des Sediments.
 
-    \item \textbf{Niederfrequenz (\SI{50}{\kilo\hertz}):} \\
-    Hier beträgt die Wellenlänge $\lambda \approx \SI{30}{\milli\meter}$. Die längeren Wellen werden an der Grenzschicht weniger stark gestreut und können tiefer in das Sediment eindringen (Volume Scattering). Das Rücksignal enthält somit Informationen über die innere Struktur und Dichte des Bodenmaterials.
-\end{itemize}
+\subsubsection*{Signalverarbeitung und Auflösung}
+
+Der Sensor operiert im 12-Bit-Modus, wodurch die analoge Signalstärke in einen digitalen Wertebereich von 0 bis 4095 ($2^{12}$ Intensitätsstufen) quantisiert wird.
+
+Die Digitalisierung des analogen Echosignals erfolgt mittels eines Analog-Digital-Wandlers (ADC) mit einer maximalen Abtastrate von \SI{100}{\kilo\hertz}. Unter der Prämisse einer Schallgeschwindigkeit von $c \approx \SI{1500}{\meter\per\second}$ resultiert aus dem Abtastintervall zwischen zwei Samples ($\Delta t = \SI{10}{\micro\second}$) eine theoretische vertikale Auflösung $\Delta z$ der Wassersäule von:
+
+\begin{equation}
+\Delta z = \frac{c \cdot \Delta t}{2} \approx \SI{7.5}{\milli\meter}
+\end{equation}
 
 \subsection{Versuchsaufbau und Datengrundlage}
+
+Der experimentelle Aufbau wurde konzipiert, um reproduzierbare akustische Messungen an definierten Sedimentproben unter kontrollierten Laborbedingungen durchzuführen. Abbildung \ref{fig:foto_versuchsaufbau} zeigt den physischen Aufbau der Messstrecke.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\linewidth]{content/images/versuchsaufbau.jpg}
-    \caption{\centering Versuchsaufbau zur Datenerfassung}
+    \caption{\centering Versuchsaufbau zur Datenerfassung im Wassertank}
     \label{fig:foto_versuchsaufbau}
 \end{figure}
 
-Für das Training und die Validierung der Klassifikationsmodelle wurden drei distinkte Sedimentklassen definiert, die sich signifikant in ihren akustischen Eigenschaften unterscheiden:
+Die Versuche fanden in einem Wassertank mit den Dimensionen \SI{120}{\centi\meter} $\times$ \SI{50}{\centi\meter} $\times$ \SI{80}{\centi\meter} ($L \times B \times H$) statt. Um eine hinreichende Signalpropagationsstrecke im Fernfeld des Sensors zu gewährleisten, wurde eine konstante Wassertiefe von \SI{70}{\centi\meter} gewählt. 
+
+Zur Aufnahme der Sedimentproben wurden drei separate Behälter mit den Abmessungen \SI{45}{\centi\meter} $\times$ \SI{30}{\centi\meter} $\times$ \SI{30}{\centi\meter} ($L \times B \times H$) verwendet, die am Boden des Tanks positioniert wurden. Der Sonarsensor wurde mittels einer speziell angefertigten Halterung fixiert. Diese Konstruktion stellt sicher, dass der Sensor mechanisch entkoppelt ist und exakt vertikal über den Probenzentren ausgerichtet werden kann, was für die Vergleichbarkeit der Echogramme essenziell ist.
+
+Die Untersuchung umfasst drei distinkte Sedimentklassen, die aufgrund ihrer unterschiedlichen akustischen Impedanzen und Streueigenschaften ausgewählt wurden. Die Materialien und ihre physikalischen Eigenschaften sind in Tabelle \ref{tab:untergrundklassen} zusammengefasst.
 
 \begin{table}[H]
     \centering

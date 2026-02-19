@@ -1,0 +1,37 @@
+18:04:52 - INFO     - RandomForestModel:load                         - RandomForestModel geladen (mit Scaler/PCA).
+18:04:52 - INFO     - steuerung      :execute_campaign             - Starte 1 Session(s).
+18:04:52 - INFO     - sonar          :verbinden                    - Versuche, Sonar auf Port COM5 zu verbinden...
+18:04:53 - INFO     - sonar          :verbinden                    - Echolot erfolgreich auf COM5 mit 115200 Baud erkannt.
+18:04:53 - INFO     - steuerung      :execute_campaign             - === Starte Session 1 (2 Tasks, 2 Wiederholungen) ===
+18:04:53 - INFO     - steuerung      :execute_campaign             - === Wiederholung 1/2 === 
+
+18:04:53 - INFO     - steuerung      :execute_measurement          - --- Starte Test: Modus '12bit-Echogram' (4) mit Frequenz 'low' ---
+18:04:54 - INFO     - sonar          :konfigurieren                - Konfiguration: output_mode='4', frequency='low' (Befehl: IdSetLowFreq)
+18:04:54 - INFO     - sonar          :daten_lesen                  - Starte Ping für 2.0 Sekunden...
+18:05:02 - INFO     - datenverarbeitung:verarbeite_daten             - Verarbeite Daten für Modus '12bit-Echogram' mit Processor 'EchogramProcessor'...
+18:05:02 - INFO     - EchogramProcessor:process                      - 2 Ping(s) mit insgesamt 739 Datenpunkten geparst.
+18:05:02 - INFO     - steuerung      :execute_measurement          - --- Starte Test: Modus '12bit-Echogram' (4) mit Frequenz 'high' ---
+18:05:03 - INFO     - sonar          :konfigurieren                - Konfiguration: output_mode='4', frequency='high' (Befehl: IdSetHighFreq)
+18:05:04 - INFO     - sonar          :daten_lesen                  - Starte Ping für 2.0 Sekunden...
+18:05:11 - INFO     - datenverarbeitung:verarbeite_daten             - Verarbeite Daten für Modus '12bit-Echogram' mit Processor 'EchogramProcessor'...
+18:05:11 - INFO     - EchogramProcessor:process                      - 2 Ping(s) mit insgesamt 800 Datenpunkten geparst.
+18:05:11 - INFO     - steuerung      :execute_session              - --- Starte KI-Klassifizierung für Session---
+18:05:11 - INFO     - RandomForestModel:predict                      - Vorhersage: Stones | Gravel: 0.10, Sand: 0.44, Stones: 0.46
+18:05:11 - INFO     - steuerung      :execute_campaign             - === Wiederholung 2/2 === 
+
+18:05:11 - INFO     - steuerung      :execute_measurement          - --- Starte Test: Modus '12bit-Echogram' (4) mit Frequenz 'low' ---
+18:05:13 - INFO     - sonar          :konfigurieren                - Konfiguration: output_mode='4', frequency='low' (Befehl: IdSetLowFreq)
+18:05:13 - INFO     - sonar          :daten_lesen                  - Starte Ping für 2.0 Sekunden...
+18:05:20 - INFO     - datenverarbeitung:verarbeite_daten             - Verarbeite Daten für Modus '12bit-Echogram' mit Processor 'EchogramProcessor'...
+18:05:20 - INFO     - EchogramProcessor:process                      - 2 Ping(s) mit insgesamt 741 Datenpunkten geparst.
+18:05:20 - INFO     - steuerung      :execute_measurement          - --- Starte Test: Modus '12bit-Echogram' (4) mit Frequenz 'high' ---
+18:05:22 - INFO     - sonar          :konfigurieren                - Konfiguration: output_mode='4', frequency='high' (Befehl: IdSetHighFreq)
+18:05:22 - INFO     - sonar          :daten_lesen                  - Starte Ping für 2.0 Sekunden...
+18:05:29 - INFO     - datenverarbeitung:verarbeite_daten             - Verarbeite Daten für Modus '12bit-Echogram' mit Processor 'EchogramProcessor'...
+18:05:29 - INFO     - EchogramProcessor:process                      - 2 Ping(s) mit insgesamt 800 Datenpunkten geparst.
+18:05:29 - INFO     - steuerung      :execute_session              - --- Starte KI-Klassifizierung für Session---
+18:05:30 - INFO     - RandomForestModel:predict                      - Vorhersage: Stones | Gravel: 0.09, Sand: 0.43, Stones: 0.48
+18:05:30 - INFO     - steuerung      :execute_campaign             - === Alle geplanten Tests abgeschlossen. === 
+
+18:05:30 - INFO     - sonar          :trennen                      - Stoppe Echolot und trenne Verbindung.
+18:05:30 - INFO     - steuerung      :execute_campaign             - Sonarverbindung getrennt.

@@ -1,0 +1,34 @@
+17:06:16 - ERROR    - RandomForestModel:load                         - Fehler beim Laden des RF-Modells: [Errno 2] No such file or directory: 'models/advanced_ki.pkl'
+17:06:16 - INFO     - steuerung      :execute_campaign             - Starte 1 Session(s).
+17:06:16 - INFO     - sonar          :verbinden                    - Versuche, Sonar auf Port COM5 zu verbinden...
+17:06:17 - INFO     - sonar          :verbinden                    - Echolot erfolgreich auf COM5 mit 115200 Baud erkannt.
+17:06:17 - INFO     - steuerung      :execute_campaign             - === Starte Session 1 (2 Tasks, 2 Wiederholungen) ===
+17:06:17 - INFO     - steuerung      :execute_campaign             - === Wiederholung 1/2
+17:06:17 - INFO     - steuerung      :execute_measurement          - --- Starte Test: Modus '12bit-Echogram' (4) mit Frequenz 'low' ---
+17:06:19 - INFO     - sonar          :konfigurieren                - Konfiguration: output_mode='4', frequency='low' (Befehl: IdSetLowFreq)
+17:06:19 - INFO     - sonar          :daten_lesen                  - Starte Ping für 2.0 Sekunden...
+17:06:27 - INFO     - datenverarbeitung:verarbeite_daten             - Verarbeite Daten für Modus '12bit-Echogram' mit Processor 'EchogramProcessor'...
+17:06:27 - INFO     - EchogramProcessor:process                      - 2 Ping(s) mit insgesamt 756 Datenpunkten geparst.
+17:06:27 - INFO     - steuerung      :execute_measurement          - --- Starte Test: Modus '12bit-Echogram' (4) mit Frequenz 'high' ---
+17:06:28 - INFO     - sonar          :konfigurieren                - Konfiguration: output_mode='4', frequency='high' (Befehl: IdSetHighFreq)
+17:06:28 - INFO     - sonar          :daten_lesen                  - Starte Ping für 2.0 Sekunden...
+17:06:36 - INFO     - datenverarbeitung:verarbeite_daten             - Verarbeite Daten für Modus '12bit-Echogram' mit Processor 'EchogramProcessor'...
+17:06:36 - INFO     - EchogramProcessor:process                      - 2 Ping(s) mit insgesamt 800 Datenpunkten geparst.
+17:06:36 - INFO     - steuerung      :execute_session              - --- Starte KI-Klassifizierung für Session---
+17:06:36 - ERROR    - RandomForestModel:predict                      - Fehler bei RF-Prediction: 'NoneType' object has no attribute 'predict'
+17:06:36 - INFO     - steuerung      :execute_campaign             - === Wiederholung 2/2
+17:06:36 - INFO     - steuerung      :execute_measurement          - --- Starte Test: Modus '12bit-Echogram' (4) mit Frequenz 'low' ---
+17:06:38 - INFO     - sonar          :konfigurieren                - Konfiguration: output_mode='4', frequency='low' (Befehl: IdSetLowFreq)
+17:06:38 - INFO     - sonar          :daten_lesen                  - Starte Ping für 2.0 Sekunden...
+17:06:45 - INFO     - datenverarbeitung:verarbeite_daten             - Verarbeite Daten für Modus '12bit-Echogram' mit Processor 'EchogramProcessor'...
+17:06:45 - INFO     - EchogramProcessor:process                      - 2 Ping(s) mit insgesamt 756 Datenpunkten geparst.
+17:06:45 - INFO     - steuerung      :execute_measurement          - --- Starte Test: Modus '12bit-Echogram' (4) mit Frequenz 'high' ---
+17:06:47 - INFO     - sonar          :konfigurieren                - Konfiguration: output_mode='4', frequency='high' (Befehl: IdSetHighFreq)
+17:06:47 - INFO     - sonar          :daten_lesen                  - Starte Ping für 2.0 Sekunden...
+17:06:54 - INFO     - datenverarbeitung:verarbeite_daten             - Verarbeite Daten für Modus '12bit-Echogram' mit Processor 'EchogramProcessor'...
+17:06:54 - INFO     - EchogramProcessor:process                      - 2 Ping(s) mit insgesamt 800 Datenpunkten geparst.
+17:06:54 - INFO     - steuerung      :execute_session              - --- Starte KI-Klassifizierung für Session---
+17:06:54 - ERROR    - RandomForestModel:predict                      - Fehler bei RF-Prediction: 'NoneType' object has no attribute 'predict'
+17:06:54 - INFO     - steuerung      :execute_campaign             - === Alle geplanten Tests abgeschlossen.
+17:06:54 - INFO     - sonar          :trennen                      - Stoppe Echolot und trenne Verbindung.
+17:06:54 - INFO     - steuerung      :execute_campaign             - Sonarverbindung getrennt.

@@ -313,6 +313,8 @@ def run_optimization():
     )
     
     all_results = []
+    # ... (rest of loop is same) ...
+    # [truncated for tool call, I will target the chunks separately]
     best_per_model = {}
     
     total_iterations = 0
@@ -398,9 +400,14 @@ def run_optimization():
             model_filename = f"sonar_model_{m_name}_opt.pkl"
             model_path = os.path.join(MODELS_DIR, model_filename)
             
-            # Save extra metadata/artifacts if needed? Just joblib is fine.
+            # Save extra metadata/artifacts 
             # We assume user loads it and knows it's a pipeline.
-            joblib.dump(final_pipeline, model_path)
+            # CRITICAL: Save classes so we can decode predictions later without guessing
+            model_data = {
+                'model': final_pipeline,
+                'classes': le.classes_
+            }
+            joblib.dump(model_data, model_path)
             print(f"  Saved to: {model_path}")
             
             print("-" * 30)

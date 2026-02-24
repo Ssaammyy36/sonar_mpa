@@ -15,7 +15,7 @@ BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_ROOT = os.path.join(BASE_PATH, '../../data')
 MODELS_DIR = os.path.join(BASE_PATH, 'models')
 MODEL_FILE = os.path.join(MODELS_DIR, 'sonar_model.pkl')
-MODEL_TO_LOAD = None        # Set to a specific path (e.g., 'models/sonar_model_rf_155.pkl') or None to auto-detect latest
+MODEL_TO_LOAD = 'sonar_model_rf_opt.pkl'        # Set to a specific path (e.g., 'models/sonar_model_rf_155.pkl') or None to auto-detect latest
 
 DATA_DIRS = [
     'messung_10_02_26'
@@ -261,7 +261,12 @@ if __name__ == "__main__":
         if MODEL_TO_LOAD:
             latest_model = MODEL_TO_LOAD
             if not os.path.exists(latest_model):
-                raise FileNotFoundError(f"Specified model not found: {latest_model}")
+                # Check in MODELS_DIR if not found strictly as path
+                candidate = os.path.join(MODELS_DIR, latest_model)
+                if os.path.exists(candidate):
+                    latest_model = candidate
+                else:
+                    raise FileNotFoundError(f"Specified model not found: {latest_model} (or in {MODELS_DIR})")
         else:
             # Auto-detect latest
             model_files = glob.glob(os.path.join(MODELS_DIR, 'sonar_model_*.pkl'))
@@ -281,33 +286,67 @@ if __name__ == "__main__":
                 latest_model = max(model_files, key=os.path.getmtime)
             
         print(f"Loading model from {latest_model}...")
-        checkpoint = joblib.load(latest_model)
-        model = checkpoint['model']
-        pca = checkpoint.get('pca')  # Use .get() for backward compatibility
-        scaler = checkpoint.get('scaler') # Use .get() for backward compatibility
+        loaded_obj = joblib.load(latest_model)
         
-        # 4. Preprocess Pipeline
-        NUM_STATS = 8
-        X_stats = X_all[:, :NUM_STATS]
-        X_wave = X_all[:, NUM_STATS:]
+        from sklearn.pipeline import Pipeline
         
-        # Scale & Transform
-        if scaler:
-            X_wave_std = scaler.transform(X_wave)
-        else:
-            X_wave_std = X_wave
+        if isinstance(loaded_obj, dict) and 'classes' in loaded_obj:
+            print("Detected professional model format with metadata.")
+            model = loaded_obj['model']
+            classes = loaded_obj['classes']
             
-        if pca:
-            X_pca = pca.transform(X_wave_std)
-            wave_features = X_pca
+            # Predict integers
+            raw_preds = model.predict(X_all)
+            # Map to strings using saved classes
+            Y_pred = [classes[p] for p in raw_preds]
+
+        elif isinstance(loaded_obj, Pipeline):
+            print("Detected sklearn Pipeline (no metadata). Predicting directly.")
+            model = loaded_obj
+            # Pipeline expects raw features
+            # The model predicts integer labels (0, 1, 2...) OR strings depending on how it was trained.
+            # If from previous auto_optimizer (string training), it returns strings.
+            # If from older one (LabelEncoder), it returns ints.
+            
+            preds = model.predict(X_all)
+            if np.issubdtype(preds.dtype, np.number):
+                 # Fallback: try to guess classes from Y_all
+                 known = sorted(np.unique(Y_all))
+                 try:
+                     Y_pred = [known[p] for p in preds]
+                 except:
+                     Y_pred = preds
+            else:
+                 Y_pred = preds
+            
         else:
-            wave_features = X_wave_std
-        
-        # Combine
-        X_final = np.hstack([X_stats, wave_features])
-        
-        # 5. Evaluate
-        Y_pred = model.predict(X_final)
+            # Legacy dictionary format from train_model.py
+            print("Detected legacy model dictionary.")
+            model = loaded_obj['model']
+            pca = loaded_obj.get('pca')
+            scaler = loaded_obj.get('scaler')
+            
+            # 4. Preprocess Pipeline (Manual)
+            NUM_STATS = 8
+            X_stats = X_all[:, :NUM_STATS]
+            X_wave = X_all[:, NUM_STATS:]
+            
+            # Scale & Transform
+            if scaler:
+                X_wave_std = scaler.transform(X_wave)
+            else:
+                X_wave_std = X_wave
+                
+            if pca:
+                X_pca = pca.transform(X_wave_std)
+                wave_features = X_pca
+            else:
+                wave_features = X_wave_std
+            
+            # Combine
+            X_final = np.hstack([X_stats, wave_features])
+            Y_pred = model.predict(X_final)
+
         acc = accuracy_score(Y_all, Y_pred)
         
         print("\n" + "="*40)

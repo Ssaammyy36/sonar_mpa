@@ -16,14 +16,11 @@ class Sonar:
 
     def verbinden(self) -> bool:
         """Stellt die Verbindung zum Echolot her."""
-        self.logger.info(
-            f"Versuche, Sonar auf Port {config.COMPORT} zu verbinden...")
+        self.logger.info(f"Versuche, Sonar auf Port {config.COMPORT} zu verbinden...")
         try:
-            self.echosounder = DualEchosounder(
-                f"\\\\.\\{config.COMPORT}", config.BAUDRATE)
+            self.echosounder = DualEchosounder(f"\\\\.\\{config.COMPORT}", config.BAUDRATE)
         except Exception as e:
-            self.logger.error(
-                f"Fehler beim Erstellen des Echosounder-Objekts: {e}")
+            self.logger.error(f"Fehler beim Erstellen des Echosounder-Objekts: {e}")
             return False
 
         if not self.echosounder.Detect():
@@ -31,8 +28,7 @@ class Sonar:
             self.echosounder = None
             return False
 
-        self.logger.info(
-            f"Echolot erfolgreich auf {config.COMPORT} mit {config.BAUDRATE} Baud erkannt.")
+        self.logger.info(f"Echolot erfolgreich auf {config.COMPORT} mit {config.BAUDRATE} Baud erkannt.")
         self.echosounder.SetCurrentTime()
         return True
 

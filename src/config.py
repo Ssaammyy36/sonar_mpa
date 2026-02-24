@@ -37,7 +37,18 @@ ANALYSIS_CONFIG = {
     "models": {
         "random_forest": {
             "type": "random_forest",
-            "model_path": "models/sonar_model_155_noScaler_noPCA.pkl",
+            "model_path": "models/sonar_model_155_noScaler_noPCA.pkl", # sonar_model_155_noScaler_noPCA oder sonar_model_rf_opt
+            "settings": {
+                "win_len": 155,
+                "p_mask_hf": 30,
+                "v_start_hf": 20,
+                "p_mask_lf": 78,
+                "v_start_lf": 55
+            }
+        },
+        "mlp": {
+            "type": "mlp",
+            "model_path": "models/sonar_model_rf_opt.pkl",
             "settings": {
                 "win_len": 155,
                 "p_mask_hf": 30,
@@ -74,7 +85,7 @@ MODES = {
         "description": "Verarbeitet NMEA-Tiefendaten ($SDDBT)."
     },
     "4": {
-        "name": "12bit-Echogram",
+        "name": "12bit-Echogram",  
         "output_mode_id": "4",
         "data_type": "echogram",
         "description": "Verarbeitet 12-Bit Echogramm-Daten (ASCII) und stellt sie grafisch dar.",

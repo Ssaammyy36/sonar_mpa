@@ -247,9 +247,9 @@ def plot_feature_importance_advanced(pipeline, feature_names, model_name='RF'):
     """
     Plottet die Feature Importance für Tree-based Models (RF, GB).
     Update: 
-    - Titel entfernt (für Thesis-Konsistenz).
-    - Schriftgrößen für Top20 optimiert (Labels 13pt, Achsen 14pt).
-    - Grouped Plot beibehalten.
+    - Layout geändert auf HORIZONTAL (Breitbild).
+    - Features auf der X-Achse (Säulen statt Balken).
+    - X-Achsen-Labels rotiert für Lesbarkeit.
     """
     # 1. Modell extrahieren
     if 'model' in pipeline.named_steps:
@@ -271,24 +271,25 @@ def plot_feature_importance_advanced(pipeline, feature_names, model_name='RF'):
         {'Feature': feature_names, 'Importance': importances})
     df_imp = df_imp.sort_values(by='Importance', ascending=False)
 
-    # --- PLOT 1: TOP 20 FEATURES (Detailliert) ---
-    # Höhe 12 sorgt für genug vertikalen Platz für 20 Balken + Text
-    plt.figure(figsize=(10, 12))
+    # --- PLOT 1: TOP 20 FEATURES (Säulendiagramm / Vertical Bars) ---
+    # Breites Format für horizontale Anordnung
+    plt.figure(figsize=(15, 7))
 
-    ax = sns.barplot(x='Importance', y='Feature',
+    # ACHTUNG: x und y getauscht -> Features auf X-Achse
+    ax = sns.barplot(x='Feature', y='Importance',
                      data=df_imp.head(20), palette='viridis')
 
-    # KEIN TITEL MEHR
+    plt.ylabel('Relative Wichtigkeit', fontsize=14)
+    plt.xlabel('Merkmal', fontsize=14)
 
-    # Schriftgrößen manuell feinjustiert:
-    plt.xlabel('Relative Wichtigkeit', fontsize=14)
-    plt.ylabel('Merkmal', fontsize=14)
+    # X-Achsen Labels (Features) rotieren, damit sie lesbar sind
+    ax.tick_params(axis='x', labelsize=12, rotation=45)
+    ax.tick_params(axis='y', labelsize=12)
 
-    # Y-Achse (Feature-Namen): 13pt ist gut lesbar, aber nicht riesig
-    ax.tick_params(axis='y', labelsize=13)
-    ax.tick_params(axis='x', labelsize=12)
+    # Labels sauber ausrichten (Rechtsbündig nach Rotation)
+    plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
 
-    plt.grid(axis='x', linestyle='--', alpha=0.5)
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.savefig(os.path.join(
         OUTPUT_DIR, f'feature_importance_top20_{model_name}.pdf'), bbox_inches='tight')
@@ -312,10 +313,11 @@ def plot_feature_importance_advanced(pipeline, feature_names, model_name='RF'):
     df_grouped = df_imp.groupby('Group')['Importance'].sum(
     ).reset_index().sort_values(by='Importance', ascending=False)
 
-    plt.figure(figsize=(8, 6))
-    sns.barplot(x='Group', y='Importance', data=df_grouped, palette='mako')
+    # Auch hier das Format etwas breiter machen, damit es einheitlich wirkt
+    plt.figure(figsize=(10, 6))
 
-    # KEIN TITEL MEHR
+    # Auch hier tauschen wir x und y für Konsistenz (Säulen)
+    sns.barplot(x='Group', y='Importance', data=df_grouped, palette='mako')
 
     plt.ylabel('Summierte Wichtigkeit', fontsize=12)
     plt.xlabel('Feature Gruppe', fontsize=12)
